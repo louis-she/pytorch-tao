@@ -1,0 +1,24 @@
+name: publish release
+
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    - name: Set up Python 3.7
+      uses: actions/setup-python@v3
+      with:
+        python-version: 3.7
+    - name: Installing poetry
+      run: curl -sSL https://install.python-poetry.org | python3 -
+    - name: Build
+      run: poetry build
+    - name: Publish
+      run: poetry publish -u ${{ PYPI_USERNAME }} -p ${{ PYPI_PASSWORD }}
