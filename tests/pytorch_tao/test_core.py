@@ -1,10 +1,10 @@
 import os
-import pytorch_tao as tao
+
 import pytest
+import pytorch_tao as tao
 
 
 def test_ensure_config(test_repo: tao.Repo):
-
     @tao.ensure_config("mount_drive", "dataset_dir")
     def read_colab_drive_file():
         return True

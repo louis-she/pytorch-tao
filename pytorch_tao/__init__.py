@@ -1,6 +1,6 @@
 __version__ = "0.1.3"
 
-from pytorch_tao.core import load_cfg, ensure_config, ConfigMissingError
+from pytorch_tao.core import ConfigMissingError, ensure_config, load_cfg
 from pytorch_tao.repo import Repo
 
 cfg = None

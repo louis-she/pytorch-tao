@@ -1,9 +1,10 @@
 import os
-from pathlib import Path
 import shutil
-import pytorch_tao as tao
 import tempfile
+from pathlib import Path
+
 import pytest
+import pytorch_tao as tao
 
 
 @pytest.fixture(autouse=True)
@@ -29,4 +30,3 @@ colab:
     tao.load_cfg(repo.cfg_path)
     yield repo
     shutil.rmtree(temp_dir)
-
