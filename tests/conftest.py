@@ -22,6 +22,7 @@ default:
     dataset_dir: /dataset/dir/in/default/cfg
     kaggle_username: snaker
     kaggle_key: xxxxxx
+    kaggle_dataset_id: the_dataset_id
 colab:
     dataset_dir: /dataset/dir/in/colab/cfg
     mount_drive: true

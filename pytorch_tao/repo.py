@@ -8,6 +8,11 @@ from typing import Union
 import git
 
 import pytorch_tao as tao
+from pytorch_tao import core
+
+
+class DirtyRepoError(Exception):
+    """Raised if action need clean repo but it is not"""
 
 
 class Repo:
@@ -15,6 +20,7 @@ class Repo:
         if isinstance(path, str):
             path = Path(path)
         self.path = path
+        self.name = path.name
         self.tao_path = path / ".tao"
         self.git_path = path / ".git"
         self.cfg_path = self.tao_path / "cfg.yml"
@@ -24,18 +30,26 @@ class Repo:
         tao.load_cfg(self.cfg_path)
 
     def exists(self):
+        """Is this tao repo exists and valid"""
         return self.path.exists() and self.tao_path.exists() and self.git_path.exists()
+
+    def run(self, script, allow_dirty=False):
+        """Start a training process"""
+        if not allow_dirty and self.git.is_dirty:
+            raise DirtyRepoError()
 
     @classmethod
     def create(cls, path: Union[Path, str]):
+        """Create a tao project from scratch"""
         if isinstance(path, str):
             path = Path(path)
         path.mkdir(exist_ok=False)
-        git.Repo.init(path)
+        git_repo = git.Repo.init(path)
+        git_repo.index.add("*")
+        git_repo.index.commit("initial commit")
         (path / ".tao").mkdir(exist_ok=False)
         (path / ".tao" / "cfg.yml").write_text(
-            """# config file of tao
-        """
+            core.render_tpl("cfg.yml", name=path.name)
         )
         return cls(path)
 
@@ -72,6 +86,6 @@ class Repo:
         )
         metadata_file.write_text(metadata)
         kaggle.api.dataset_create_version(
-            folder=tempdir, version_notes=self.git.head.ref.message
+            folder=tempdir, version_notes=self.git.head.ref.commit.message
         )
         shutil.rmtree(tempdir)

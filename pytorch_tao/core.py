@@ -3,18 +3,11 @@ from functools import wraps
 from pathlib import Path
 from typing import Callable, Dict, List
 
+import jinja2
+
 import yaml
 
 import pytorch_tao as tao
-
-
-class ConfigMissingError(Exception):
-    def __init__(self, keys: List[str], func: Callable):
-        self.missing_keys = set(keys)
-        self.func = func
-        super().__init__(
-            f"Config keys {self.missing_keys} must be present for calling {func.__name__}"
-        )
 
 
 def load_cfg(cfg_path: Path) -> Dict:
@@ -34,13 +27,24 @@ def load_cfg(cfg_path: Path) -> Dict:
     tao.cfg = default_config
 
 
+class ConfigMissingError(Exception):
+    def __init__(self, keys: List[str], func: Callable):
+        self.missing_keys = set(keys)
+        self.func = func
+        super().__init__(
+            f"Config keys {self.missing_keys} must be present for calling {func.__name__}"
+        )
+
+
 def ensure_config(*keys):
     """A decorator to ensure that some config keys must be present for a function"""
 
     def decorator(func):
         @wraps(func)
         def real(*args, **kwargs):
-            missing_keys = [key for key in keys if key not in tao.cfg]
+            missing_keys = [
+                key for key in keys if key not in tao.cfg or not tao.cfg[key]
+            ]
             if len(missing_keys) != 0:
                 raise ConfigMissingError(missing_keys, func)
             return func(*args, **kwargs)
@@ -48,3 +52,13 @@ def ensure_config(*keys):
         return real
 
     return decorator
+
+
+_template_renderer = jinja2.Environment(
+    loader=jinja2.PackageLoader("pytorch_tao"), autoescape=jinja2.select_autoescape()
+)
+
+
+def render_tpl(template_name, **kwargs) -> str:
+    template = _template_renderer.get_template(template_name + ".jinja")
+    return template.render(**kwargs)

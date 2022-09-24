@@ -1,6 +1,7 @@
 import os
 import tempfile
 from pathlib import Path
+from unittest.mock import MagicMock
 
 import pytest
 import pytorch_tao as tao
@@ -34,3 +35,11 @@ def test_load_config(test_repo: tao.Repo):
     assert tao.cfg["kaggle_username"] == "snaker"
     assert tao.cfg["kaggle_key"] == "xxxxxx"
     assert tao.cfg["mount_drive"]
+
+
+def test_sync_code_to_kaggle(test_repo: tao.Repo):
+    import kaggle
+
+    kaggle.api.dataset_create_version = MagicMock(return_value=True)
+    test_repo.sync_code_to_kaggle()
+    kaggle.api.dataset_create_version.assert_called_once()

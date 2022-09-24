@@ -17,11 +17,8 @@ def new(path):
 
 
 @main.command()
-@click.option("username", required=True)
-@click.option("key", required=True)
-@click.option("dataset_id", required=True)
 @click.option("tao_repo", default=".")
-def sync_kaggle_dataset(username, key, dataset_id, tao_repo):
+def sync_kaggle_dataset(tao_repo):
     repo = tao.Repo(tao_repo, exists=True)
     repo.create_sync_kaggle_dataset_action()
 
