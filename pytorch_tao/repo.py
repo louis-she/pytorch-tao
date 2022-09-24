@@ -1,4 +1,7 @@
+import pytorch_tao as tao
 from genericpath import isdir
+import os
+import yaml
 from pathlib import Path
 import re
 import shutil
@@ -15,9 +18,11 @@ class Repo:
         self.path = path
         self.tao_path = path / ".tao"
         self.git_path = path / ".git"
+        self.cfg_path = self.tao_path / "cfg.yml"
         if not self.exists():
             raise FileNotFoundError()
         self.git = git.Repo(self.path)
+        tao.load_cfg(self.cfg_path)
 
     def exists(self):
         return self.path.exists() and self.tao_path.exists() and self.git_path.exists()
@@ -29,6 +34,8 @@ class Repo:
         path.mkdir(exist_ok=False)
         git.Repo.init(path)
         (path / ".tao").mkdir(exist_ok=False)
+        (path / ".tao" / "cfg.yml").write_text("""# config file of tao
+        """)
         return cls(path)
 
     def sync_code_to_kaggle(self, dataset_id: str, title: str = None):
