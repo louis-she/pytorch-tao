@@ -1,3 +1,4 @@
+import os
 import re
 import shutil
 from pathlib import Path
@@ -5,7 +6,6 @@ from tempfile import mkdtemp
 from typing import Union
 
 import git
-import kaggle
 
 import pytorch_tao as tao
 
@@ -39,22 +39,27 @@ class Repo:
         )
         return cls(path)
 
-    def sync_code_to_kaggle(self, dataset_id: str, title: str = None):
+    @tao.ensure_config("kaggle_username", "kaggle_key", "kaggle_dataset_id")
+    def sync_code_to_kaggle(self):
         """Create a GitHub workflow that sync the source code to Kaggle dataset.
 
         There are presteps before generating this action:
         1. Create a dataset with any file(which will give the `dataset_slug` parameter)
         2. In the GitHub repo settings, add two GitHub action secrets named KAGGLE_USERNAME and KAGGLE_KEY
         """
-        if title is None:
-            title = re.sub("/|-", "_", "dataset_id")
+
+        # kaggle do authentication when importing the package
+        # so the import goes here
+        os.environ["KAGGLE_USERNAME"] = tao.cfg["kaggle_username"]
+        os.environ["KAGGLE_KEY"] = tao.cfg["kaggle_key"]
+        import kaggle
+
         tempdir = Path(mkdtemp())
         output_file = tempdir / "output.zip"
         with output_file.open("wb") as f:
             self.git.archive(f, format="zip")
         metadata_file = tempdir / "dataset-metadata.json"
         metadata = """{
-  "title": "%s",
   "id": "%s",
   "licenses": [
     {
@@ -63,8 +68,7 @@ class Repo:
   ]
 }
 """ % (
-            title,
-            dataset_id,
+            tao.cfg["kaggle_dataset_id"],
         )
         metadata_file.write_text(metadata)
         kaggle.api.dataset_create_version(

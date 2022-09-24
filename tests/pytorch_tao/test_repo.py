@@ -1,31 +1,9 @@
-import contextlib
 import os
-import shutil
 import tempfile
 from pathlib import Path
-from typing import Iterator
 
 import pytest
 import pytorch_tao as tao
-
-
-@contextlib.contextmanager
-def test_repo():
-    temp_dir = Path(tempfile.mkdtemp())
-    repo_dir = temp_dir / "test_repo"
-    repo = tao.Repo.create(repo_dir)
-    test_cfg = """
-default:
-    dataset_dir: /dataset/dir/in/default/cfg
-    kaggle_username: snaker
-    kaggle_key: xxxxxx
-colab:
-    dataset_dir: /dataset/dir/in/colab/cfg
-"""
-    repo.cfg_path.write_text(test_cfg)
-    tao.load_cfg(repo.cfg_path)
-    yield repo
-    shutil.rmtree(temp_dir)
 
 
 def test_create_repo():
@@ -44,14 +22,15 @@ def test_create_repo():
     assert not repo.exists()
 
 
-def test_load_config():
-    with test_repo():
-        assert tao.cfg["dataset_dir"] == "/dataset/dir/in/default/cfg"
-        assert tao.cfg["kaggle_username"] == "snaker"
-        assert tao.cfg["kaggle_key"] == "xxxxxx"
+def test_load_config(test_repo: tao.Repo):
+    assert tao.cfg["dataset_dir"] == "/dataset/dir/in/default/cfg"
+    assert tao.cfg["kaggle_username"] == "snaker"
+    assert tao.cfg["kaggle_key"] == "xxxxxx"
+    assert "mount_drive" not in tao.cfg
 
     os.environ["TAO_ENV"] = "colab"
-    with test_repo():
-        assert tao.cfg["dataset_dir"] == "/dataset/dir/in/colab/cfg"
-        assert tao.cfg["kaggle_username"] == "snaker"
-        assert tao.cfg["kaggle_key"] == "xxxxxx"
+    tao.load_cfg(test_repo.cfg_path)
+    assert tao.cfg["dataset_dir"] == "/dataset/dir/in/colab/cfg"
+    assert tao.cfg["kaggle_username"] == "snaker"
+    assert tao.cfg["kaggle_key"] == "xxxxxx"
+    assert tao.cfg["mount_drive"]

@@ -1,10 +1,19 @@
+from functools import wraps
 import os
 from pathlib import Path
-from typing import Dict
+from typing import Callable, Dict, List
 
 import yaml
 
 import pytorch_tao as tao
+
+
+class ConfigMissingError(Exception):
+
+    def __init__(self, keys: List[str], func: Callable):
+        self.missing_keys = set(keys)
+        self.func = func
+        super().__init__(f"Config keys {self.missing_keys} must be present for calling {func.__name__}")
 
 
 def load_cfg(cfg_path: Path) -> Dict:
@@ -22,3 +31,17 @@ def load_cfg(cfg_path: Path) -> Dict:
     env_config = config.get(config_name, {})
     default_config.update(env_config)
     tao.cfg = default_config
+
+
+def ensure_config(*keys):
+    """A decorator to ensure that some config keys must be present for a function
+    """
+    def decorator(func):
+        @wraps(func)
+        def real(*args, **kwargs):
+            missing_keys = [key for key in keys if key not in tao.cfg]
+            if len(missing_keys) != 0:
+                raise ConfigMissingError(missing_keys, func)
+            return func(*args, **kwargs)
+        return real
+    return decorator
