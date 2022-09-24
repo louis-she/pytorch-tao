@@ -1,10 +1,11 @@
 import contextlib
 import os
-from pathlib import Path
 import shutil
-from typing import Iterator
-import pytest
 import tempfile
+from pathlib import Path
+from typing import Iterator
+
+import pytest
 import pytorch_tao as tao
 
 

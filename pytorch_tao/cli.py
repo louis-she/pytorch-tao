@@ -1,5 +1,5 @@
-from email.policy import default
 import click
+
 import pytorch_tao as tao
 
 
@@ -11,8 +11,7 @@ def main():
 @main.command()
 @click.argument("path")
 def new(path):
-    """Create a new project
-    """
+    """Create a new project"""
     repo = tao.Repo(path)
     repo.create()
 

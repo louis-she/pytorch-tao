@@ -1,14 +1,13 @@
-import pytorch_tao as tao
-from genericpath import isdir
-import os
-import yaml
-from pathlib import Path
 import re
 import shutil
-import kaggle
-from tempfile import mkdtemp, tempdir
+from pathlib import Path
+from tempfile import mkdtemp
 from typing import Union
+
 import git
+import kaggle
+
+import pytorch_tao as tao
 
 
 class Repo:
@@ -34,8 +33,10 @@ class Repo:
         path.mkdir(exist_ok=False)
         git.Repo.init(path)
         (path / ".tao").mkdir(exist_ok=False)
-        (path / ".tao" / "cfg.yml").write_text("""# config file of tao
-        """)
+        (path / ".tao" / "cfg.yml").write_text(
+            """# config file of tao
+        """
+        )
         return cls(path)
 
     def sync_code_to_kaggle(self, dataset_id: str, title: str = None):

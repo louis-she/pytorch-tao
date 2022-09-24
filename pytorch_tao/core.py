@@ -1,8 +1,10 @@
 import os
-import pytorch_tao as tao
 from pathlib import Path
 from typing import Dict
+
 import yaml
+
+import pytorch_tao as tao
 
 
 def load_cfg(cfg_path: Path) -> Dict:
