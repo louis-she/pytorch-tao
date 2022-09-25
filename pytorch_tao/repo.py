@@ -1,9 +1,14 @@
+from copy import copy
+from datetime import datetime
 import os
 import re
 import shutil
+import subprocess
 from pathlib import Path
+import sys
 from tempfile import mkdtemp
 from typing import Union
+from torch.distributed.run import run
 
 import git
 
@@ -24,19 +29,59 @@ class Repo:
         self.tao_path = path / ".tao"
         self.git_path = path / ".git"
         self.cfg_path = self.tao_path / "cfg.yml"
-        if not self.exists():
-            raise FileNotFoundError()
-        self.git = git.Repo(self.path)
+        if self.path.exists():
+            try:
+                self.git = git.Repo(self.path)
+            except git.InvalidGitRepositoryError:
+                pass
+
+    def init(self):
+        self.tao_path.mkdir(exist_ok=False)
+        config_content = core.render_tpl("cfg.yml", name=self.name, run_dir=(self.tao_path / "runs").as_posix())
+        self.cfg_path.write_text(config_content)
+        gitignore_content = core.render_tpl(".gitignore")
+        (self.tao_path / ".gitignore").write_text(gitignore_content)
+
+        self.git = git.Repo.init(self.path)
+        self.git.index.add("*")
+        self.git.index.commit("initial commit")
+
+    def load_cfg(self):
         tao.load_cfg(self.cfg_path)
 
     def exists(self):
         """Is this tao repo exists and valid"""
         return self.path.exists() and self.tao_path.exists() and self.git_path.exists()
 
-    def run(self, script, allow_dirty=False):
+    @tao.ensure_config("run_dir")
+    def run(self, dirty=False):
         """Start a training process"""
-        if not allow_dirty and self.git.is_dirty:
+        if not dirty and self.git.is_dirty:
             raise DirtyRepoError()
+        run_dir = Path(tao.cfg["run_dir"])
+        metadata = {
+            "is_dirty": self.git.is_dirty,
+            "commit": self.git.head.ref.commit.hexsha,
+            "run_at": datetime.now().strftime("%m/%d/%Y, %H:%M:%S")
+        }
+        if dirty:
+            # run process in current pwd
+            run_fold = self.path
+        else:
+            # run process in run dir
+            hexsha = self.git.head.ref.commit.hexsha[:8]
+            run_fold = Path(tao.cfg["run_dir"]) / hexsha
+            for i in range(1000):
+                if not run_fold.exists():
+                    break
+                run_fold = Path(tao.cfg["run_dir"]) / f"{hexsha}_{i}"
+            git.Repo.clone_from(self.path.as_posix(), run_fold.as_posix())
+
+        args = copy(tao.args)
+        del args.tao_dirty
+        del args.tao_cmd
+        print(args)
+        # run(args)
 
     @classmethod
     def create(cls, path: Union[Path, str]):
@@ -44,13 +89,20 @@ class Repo:
         if isinstance(path, str):
             path = Path(path)
         path.mkdir(exist_ok=False)
-        git_repo = git.Repo.init(path)
-        git_repo.index.add("*")
-        git_repo.index.commit("initial commit")
-        (path / ".tao").mkdir(exist_ok=False)
-        (path / ".tao" / "cfg.yml").write_text(
-            core.render_tpl("cfg.yml", name=path.name)
-        )
+        repo = cls(path)
+        repo.init()
+        return repo
+
+    @classmethod
+    def find_by_file(cls, path: Union[Path, str]):
+        """Find the nearest tao repo of any file"""
+        path = Path(path).resolve()
+        while True:
+            if path.as_posix() == "/":
+                raise FileNotFoundError()
+            if (path / ".tao").exists():
+                break
+            path = path.parent
         return cls(path)
 
     @tao.ensure_config("kaggle_username", "kaggle_key", "kaggle_dataset_id")

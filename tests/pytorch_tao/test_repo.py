@@ -20,7 +20,22 @@ def test_create_repo():
         tmpdir = Path(tmpdir)
         repo = tao.Repo.create(tmpdir / "random_project")
         assert repo.exists()
+        assert repo.git.head.ref.commit.message == "initial commit"
     assert not repo.exists()
+
+
+def test_find_repo_by_file(test_repo: tao.Repo):
+    subdir = (test_repo.path / "sub1" / "sub2" / "sub3")
+    subdir.mkdir(parents=True)
+    subfile = (subdir / "some_file.txt")
+    subfile.touch()
+
+    assert tao.Repo.find_by_file(subdir).name == test_repo.name
+    assert tao.Repo.find_by_file(subfile).name == test_repo.name
+
+    with pytest.raises(FileNotFoundError):
+        with tempfile.NamedTemporaryFile() as file:
+            tao.Repo.find_by_file(file.name)
 
 
 def test_load_config(test_repo: tao.Repo):

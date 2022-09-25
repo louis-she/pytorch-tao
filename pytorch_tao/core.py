@@ -1,7 +1,9 @@
+import argparse
 import os
 from functools import wraps
 from pathlib import Path
 from typing import Callable, Dict, List
+from torch.distributed.run import get_args_parser
 
 import jinja2
 
@@ -62,3 +64,53 @@ _template_renderer = jinja2.Environment(
 def render_tpl(template_name, **kwargs) -> str:
     template = _template_renderer.get_template(template_name + ".jinja")
     return template.render(**kwargs)
+
+
+def parse_args():
+    parser = argparse.ArgumentParser(description="PyTorch Tao")
+    subparsers = parser.add_subparsers(dest="tao_cmd")
+
+    run_parser = subparsers.add_parser(
+        "run",
+        help="Run a training process",
+        parents=[get_args_parser()],
+        add_help=False,
+    )
+
+    run_parser.add_argument(
+        "--dirty",
+        action="store_true",
+        dest="tao_dirty",
+        default=False,
+        help="If the git repo is not clean, this option should be enabled to start the training, "
+        "otherwise Tao will complain about it. Dirty run is for code testing purpose.",
+    )
+
+    new_parser = subparsers.add_parser(
+        "new",
+        help="Create a tao project",
+    )
+
+    new_parser.add_argument("path", type=str, help="Path of this new project")
+
+    tao.args = parser.parse_args()
+
+
+def run():
+    repo = tao.Repo(tao.args.path)
+    repo.run()
+
+
+def new():
+    tao.Repo.create(tao.args.path)
+
+
+_cmd = {
+    "run": run,
+    "new": new,
+}
+
+def dispatch():
+    if tao.args is None:
+        raise RuntimeError("Should parse args before dispatch")
+    _cmd[tao.args.tao_cmd]()

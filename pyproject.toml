@@ -12,6 +12,7 @@ GitPython = "^3.1.27"
 kaggle = "^1.5.12"
 PyYAML = "^6.0"
 Jinja2 = "^3.1.2"
+torch = "^1.12.1"
 
 [tool.poetry.dev-dependencies]
 black = "^22.8.0"
@@ -22,6 +23,13 @@ black = "^22.8.0"
 flake8 = "^5.0.4"
 usort = "^1.0.5"
 ipdb = "^0.13.9"
+
+
+[[tool.poetry.source]]
+name = "qinghua"
+url = "https://pypi.tuna.tsinghua.edu.cn/simple"
+default = true
+secondary = false
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
