@@ -1,16 +1,16 @@
-from copy import copy
-from datetime import datetime
 import os
 import re
 import shutil
 import subprocess
-from pathlib import Path
 import sys
+from copy import copy
+from datetime import datetime
+from pathlib import Path
 from tempfile import mkdtemp
 from typing import Union
-from torch.distributed.run import run
 
 import git
+from torch.distributed.run import run
 
 import pytorch_tao as tao
 from pytorch_tao import core
@@ -37,7 +37,9 @@ class Repo:
 
     def init(self):
         self.tao_path.mkdir(exist_ok=False)
-        config_content = core.render_tpl("cfg.yml", name=self.name, run_dir=(self.tao_path / "runs").as_posix())
+        config_content = core.render_tpl(
+            "cfg.yml", name=self.name, run_dir=(self.tao_path / "runs").as_posix()
+        )
         self.cfg_path.write_text(config_content)
         gitignore_content = core.render_tpl(".gitignore")
         (self.tao_path / ".gitignore").write_text(gitignore_content)
@@ -62,7 +64,7 @@ class Repo:
         metadata = {
             "is_dirty": self.git.is_dirty,
             "commit": self.git.head.ref.commit.hexsha,
-            "run_at": datetime.now().strftime("%m/%d/%Y, %H:%M:%S")
+            "run_at": datetime.now().strftime("%m/%d/%Y, %H:%M:%S"),
         }
         if dirty:
             # run process in current pwd

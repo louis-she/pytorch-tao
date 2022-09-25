@@ -25,9 +25,9 @@ def test_create_repo():
 
 
 def test_find_repo_by_file(test_repo: tao.Repo):
-    subdir = (test_repo.path / "sub1" / "sub2" / "sub3")
+    subdir = test_repo.path / "sub1" / "sub2" / "sub3"
     subdir.mkdir(parents=True)
-    subfile = (subdir / "some_file.txt")
+    subfile = subdir / "some_file.txt"
     subfile.touch()
 
     assert tao.Repo.find_by_file(subdir).name == test_repo.name

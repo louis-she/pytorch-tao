@@ -3,11 +3,11 @@ import os
 from functools import wraps
 from pathlib import Path
 from typing import Callable, Dict, List
-from torch.distributed.run import get_args_parser
 
 import jinja2
 
 import yaml
+from torch.distributed.run import get_args_parser
 
 import pytorch_tao as tao
 
@@ -109,6 +109,7 @@ _cmd = {
     "run": run,
     "new": new,
 }
+
 
 def dispatch():
     if tao.args is None:
