@@ -1,9 +1,15 @@
 __version__ = "0.1.3"
 
 from pytorch_tao.core import ConfigMissingError, ensure_config, load_cfg
-from pytorch_tao.repo import Repo
+from pytorch_tao.repo import Repo, DirtyRepoError
 
-cfg = None
+try:
+    repo = Repo.find_by_file(".")
+    cfg = load_cfg(repo.cfg_path)
+except FileNotFoundError:
+    repo = None
+    cfg = None
+
 args = None
 
-__all__ = ["Repo", "load_cfg", "cfg", "ensure_config", "ConfigMissingError", "args"]
+__all__ = ["Repo", "load_cfg", "cfg", "ensure_config", "ConfigMissingError", "args", "DirtyRepoError"]

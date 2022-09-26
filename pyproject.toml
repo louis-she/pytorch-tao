@@ -23,6 +23,7 @@ black = "^22.8.0"
 flake8 = "^5.0.4"
 usort = "^1.0.5"
 ipdb = "^0.13.9"
+pytest-cov = "^3.0.0"
 
 
 [[tool.poetry.source]]

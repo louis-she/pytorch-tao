@@ -56,34 +56,40 @@ class Repo:
         return self.path.exists() and self.tao_path.exists() and self.git_path.exists()
 
     @tao.ensure_config("run_dir")
-    def run(self, dirty=False):
-        """Start a training process"""
-        if not dirty and self.git.is_dirty:
+    def run(self):
+        """Start a training process.
+
+        Run will call torch.distributed.run.run so this func will rely on the
+        command line arguments. Call this function with right command line options.
+        """
+        if not tao.args.tao_dirty and self.git.is_dirty(untracked_files=True):
             raise DirtyRepoError()
         run_dir = Path(tao.cfg["run_dir"])
         metadata = {
-            "is_dirty": self.git.is_dirty,
+            "dirty": self.git.is_dirty(untracked_files=True),
             "commit": self.git.head.ref.commit.hexsha,
             "run_at": datetime.now().strftime("%m/%d/%Y, %H:%M:%S"),
         }
-        if dirty:
+        if tao.args.tao_dirty:
             # run process in current pwd
             run_fold = self.path
         else:
             # run process in run dir
             hexsha = self.git.head.ref.commit.hexsha[:8]
-            run_fold = Path(tao.cfg["run_dir"]) / hexsha
+            run_fold = run_dir / hexsha
             for i in range(1000):
                 if not run_fold.exists():
                     break
-                run_fold = Path(tao.cfg["run_dir"]) / f"{hexsha}_{i}"
+                run_fold = run_dir / f"{hexsha}_{i}"
             git.Repo.clone_from(self.path.as_posix(), run_fold.as_posix())
-
         args = copy(tao.args)
         del args.tao_dirty
         del args.tao_cmd
-        print(args)
-        # run(args)
+        for key, val in metadata.items():
+            args.training_script_args += [f"--{key}", val]
+        os.chdir(run_fold)
+        os.environ["PYTHONPATH"] = f'{run_fold.as_posix()}:{os.getenv("PYTHONPATH", "")}'
+        run(args)
 
     @classmethod
     def create(cls, path: Union[Path, str]):

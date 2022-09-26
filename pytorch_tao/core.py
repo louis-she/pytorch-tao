@@ -66,7 +66,7 @@ def render_tpl(template_name, **kwargs) -> str:
     return template.render(**kwargs)
 
 
-def parse_args():
+def parse_args(args : str=None):
     parser = argparse.ArgumentParser(description="PyTorch Tao")
     subparsers = parser.add_subparsers(dest="tao_cmd")
 
@@ -93,12 +93,13 @@ def parse_args():
 
     new_parser.add_argument("path", type=str, help="Path of this new project")
 
-    tao.args = parser.parse_args()
+    tao.args = parser.parse_args(args)
 
 
 def run():
-    repo = tao.Repo(tao.args.path)
-    repo.run()
+    tao.repo = tao.Repo.find_by_file(tao.args.training_script)
+    tao.load_cfg(tao.repo.cfg_path)
+    tao.repo.run()
 
 
 def new():
