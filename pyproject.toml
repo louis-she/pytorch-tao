@@ -29,7 +29,7 @@ pytest-cov = "^3.0.0"
 [[tool.poetry.source]]
 name = "qinghua"
 url = "https://pypi.tuna.tsinghua.edu.cn/simple"
-default = true
+default = false
 secondary = false
 
 [build-system]
