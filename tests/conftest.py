@@ -12,7 +12,7 @@ def reset_env():
     os.environ["TAO_ENV"] = ""
 
 
-@pytest.fixture
+@pytest.fixture(scope="function")
 def test_repo():
     temp_dir = Path(tempfile.mkdtemp())
     repo_dir = temp_dir / "test_repo"

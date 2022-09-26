@@ -45,7 +45,7 @@ class Repo:
         (self.tao_path / ".gitignore").write_text(gitignore_content)
 
         self.git = git.Repo.init(self.path)
-        self.git.index.add("*")
+        self.git.git.add(all=True)
         self.git.index.commit("initial commit")
 
     def load_cfg(self):
@@ -65,6 +65,7 @@ class Repo:
         if not tao.args.tao_dirty and self.git.is_dirty(untracked_files=True):
             raise DirtyRepoError()
         run_dir = Path(tao.cfg["run_dir"])
+        run_dir = run_dir if run_dir.is_absolute() else self.path / run_dir
         metadata = {
             "dirty": self.git.is_dirty(untracked_files=True),
             "commit": self.git.head.ref.commit.hexsha,
@@ -87,11 +88,13 @@ class Repo:
         del args.tao_cmd
         for key, val in metadata.items():
             args.training_script_args += [f"--{key}", val]
+        prev_cwd = os.getcwd()
         os.chdir(run_fold)
         os.environ[
             "PYTHONPATH"
         ] = f'{run_fold.as_posix()}:{os.getenv("PYTHONPATH", "")}'
         run(args)
+        os.chdir(prev_cwd)
 
     @classmethod
     def create(cls, path: Union[Path, str]):

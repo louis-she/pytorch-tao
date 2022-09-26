@@ -77,6 +77,10 @@ def test_run_dirty(test_repo: tao.Repo):
         test_repo.run()
 
 
+def option_value(argv, option):
+    return argv[argv.index(option) + 1]
+
+
 def test_run_with_dirty_option(test_repo: tao.Repo):
     command = f"run --dirty {(test_repo.path / 'scripts' / 'train.py').as_posix()} --test --epochs 10".split(
         " "
@@ -85,13 +89,50 @@ def test_run_with_dirty_option(test_repo: tao.Repo):
     test_repo.run()
     with (test_repo.path / "result.json").open("r") as f:
         result = json.load(f)
+
     assert result["local_rank"] == "0"
-    assert "--test" in result["argv"]
-    assert "--dirty" in result["argv"]
-    assert "--commit" in result["argv"]
     assert result["cwd"] == test_repo.path.as_posix()
     assert result["some_lib_path"] == (test_repo.path / "some_lib.py").as_posix()
     assert (
         result["some_package_path"]
         == (test_repo.path / "some_package" / "__init__.py").as_posix()
+    )
+
+    argv = result["argv"]
+    assert "--test" in argv
+    assert "--epochs" in argv
+    assert "10" == option_value(argv, "--epochs")
+    assert "--dirty" in argv
+    assert "True" == option_value(argv, "--dirty")
+    assert "--commit" in argv
+    assert test_repo.git.head.ref.commit.hexsha == option_value(argv, "--commit")
+
+
+def test_run_clean_repo(test_repo: tao.Repo):
+    test_repo.git.git.add(all=True)
+    test_repo.git.index.commit("clean dirty")
+
+    command = f"run {(test_repo.path / 'scripts' / 'train.py').as_posix()} --test --epochs 10".split(
+        " "
+    )
+    core.parse_args(command)
+    test_repo.run()
+
+    hash = test_repo.git.head.ref.commit.hexsha[:8]
+    run_dir = test_repo.path / "runs" / hash
+    assert (run_dir / "result.json").is_file()
+    assert (run_dir / ".tao").is_dir()
+    assert (run_dir / "scripts" / "train.py").is_file()
+    assert (run_dir / "some_package" / "__init__.py").is_file()
+
+    with (run_dir / "result.json").open("r") as f:
+        result = json.load(f)
+
+    argv = result["argv"]
+    assert "--dirty" in argv
+    assert "False" == option_value(argv, "--dirty")
+    assert result["some_lib_path"] == (run_dir / "some_lib.py").as_posix()
+    assert (
+        result["some_package_path"]
+        == (run_dir / "some_package" / "__init__.py").as_posix()
     )
