@@ -1,9 +1,9 @@
-from contextlib import redirect_stdout
 import io
 import json
 import os
 import subprocess
 import tempfile
+from contextlib import redirect_stdout
 from pathlib import Path
 from unittest.mock import MagicMock
 
@@ -70,13 +70,17 @@ def test_sync_code_to_kaggle(test_repo: tao.Repo):
 
 def test_run_dirty(test_repo: tao.Repo):
     with pytest.raises(tao.DirtyRepoError):
-        command = f"run {(test_repo.path / 'scripts' / 'train.py').as_posix()} --test --epochs 10".split(" ")
+        command = f"run {(test_repo.path / 'scripts' / 'train.py').as_posix()} --test --epochs 10".split(
+            " "
+        )
         core.parse_args(command)
         test_repo.run()
 
 
 def test_run_with_dirty_option(test_repo: tao.Repo):
-    command = f"run --dirty {(test_repo.path / 'scripts' / 'train.py').as_posix()} --test --epochs 10".split(" ")
+    command = f"run --dirty {(test_repo.path / 'scripts' / 'train.py').as_posix()} --test --epochs 10".split(
+        " "
+    )
     core.parse_args(command)
     test_repo.run()
     with (test_repo.path / "result.json").open("r") as f:
@@ -87,4 +91,7 @@ def test_run_with_dirty_option(test_repo: tao.Repo):
     assert "--commit" in result["argv"]
     assert result["cwd"] == test_repo.path.as_posix()
     assert result["some_lib_path"] == (test_repo.path / "some_lib.py").as_posix()
-    assert result["some_package_path"] == (test_repo.path / "some_package" / "__init__.py").as_posix()
+    assert (
+        result["some_package_path"]
+        == (test_repo.path / "some_package" / "__init__.py").as_posix()
+    )

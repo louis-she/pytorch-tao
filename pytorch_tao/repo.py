@@ -88,7 +88,9 @@ class Repo:
         for key, val in metadata.items():
             args.training_script_args += [f"--{key}", val]
         os.chdir(run_fold)
-        os.environ["PYTHONPATH"] = f'{run_fold.as_posix()}:{os.getenv("PYTHONPATH", "")}'
+        os.environ[
+            "PYTHONPATH"
+        ] = f'{run_fold.as_posix()}:{os.getenv("PYTHONPATH", "")}'
         run(args)
 
     @classmethod

@@ -37,7 +37,8 @@ colab:
     (repo.path / "some_package" / "__init__.py").touch()
 
     (repo.path / "scripts").mkdir()
-    (repo.path / "scripts" / "train.py").write_text("""
+    (repo.path / "scripts" / "train.py").write_text(
+        """
 import os
 import sys
 import json
