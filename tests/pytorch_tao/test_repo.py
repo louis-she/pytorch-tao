@@ -59,8 +59,8 @@ def test_load_config(test_repo: tao.Repo):
 
 def test_sync_code_to_kaggle(test_repo: tao.Repo):
     # set the env or import kaggle will raise error
-    os.environ["kaggle_username"] = "xxxxxx"
-    os.environ["kaggle_key"] = "xxxxxx"
+    os.environ["KAGGLE_USERNAME"] = "xxxxxx"
+    os.environ["KAGGLE_KEY"] = "xxxxxx"
     import kaggle
 
     kaggle.api.dataset_create_version = MagicMock(return_value=True)
