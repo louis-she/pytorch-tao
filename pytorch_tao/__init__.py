@@ -1,4 +1,4 @@
-__version__ = "0.1.3"
+__version__ = "0.1.4"
 
 from pytorch_tao.core import ConfigMissingError, ensure_config, load_cfg
 from pytorch_tao.repo import DirtyRepoError, Repo
