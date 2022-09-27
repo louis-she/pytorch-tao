@@ -52,6 +52,9 @@ class Repo:
         """Is this tao repo exists and valid"""
         return self.path.exists() and self.tao_path.exists() and self.git_path.exists()
 
+    def tune(self):
+        """Start hyperparameter tunning process"""
+
     @tao.ensure_config("run_dir")
     def run(self):
         """Start a training process.
@@ -108,7 +111,7 @@ class Repo:
         return repo
 
     @classmethod
-    def find_by_file(cls, path: Union[Path, str]):
+    def find_by_file(cls, path: Union[Path, str]) -> "Repo":
         """Find the nearest tao repo of any file"""
         path = Path(path).resolve()
         while True:

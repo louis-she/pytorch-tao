@@ -66,8 +66,13 @@ def render_tpl(template_name, **kwargs) -> str:
     return template.render(**kwargs)
 
 
-def parse_args(args: str = None):
+def parse_hyper_parameter_options(args_class):
+    pass
+
+
+def parse_tao_args(args: str = None):
     parser = argparse.ArgumentParser(description="PyTorch Tao")
+
     subparsers = parser.add_subparsers(dest="tao_cmd")
 
     run_parser = subparsers.add_parser(
