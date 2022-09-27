@@ -1,9 +1,6 @@
-import io
 import json
 import os
-import subprocess
 import tempfile
-from contextlib import redirect_stdout
 from pathlib import Path
 from unittest.mock import MagicMock
 
@@ -112,9 +109,10 @@ def test_run_clean_repo(test_repo: tao.Repo):
     test_repo.git.git.add(all=True)
     test_repo.git.index.commit("clean dirty")
 
-    command = f"run {(test_repo.path / 'scripts' / 'train.py').as_posix()} --test --epochs 10".split(
-        " "
+    command = (
+        f"run {(test_repo.path / 'scripts' / 'train.py').as_posix()} --test --epochs 10"
     )
+    command = command.split(" ")
     core.parse_args(command)
     test_repo.run()
 
@@ -136,3 +134,12 @@ def test_run_clean_repo(test_repo: tao.Repo):
         result["some_package_path"]
         == (run_dir / "some_package" / "__init__.py").as_posix()
     )
+
+
+def test_run_commit(test_repo: tao.Repo):
+    command = f"run --commit some_comments {(test_repo.path / 'scripts' / 'train.py').as_posix()} --test --epochs 10"
+    command = command.split(" ")
+    core.parse_args(command)
+    test_repo.run()
+    assert not test_repo.git.is_dirty()
+    assert test_repo.git.head.ref.commit.message == "some_comments"

@@ -86,6 +86,14 @@ def parse_args(args: str = None):
         "otherwise Tao will complain about it. Dirty run is for code testing purpose.",
     )
 
+    run_parser.add_argument(
+        "--commit",
+        type=str,
+        dest="tao_commit",
+        default=None,
+        help="Commit and run the code, it is equal to `git add -A; git commit -m xxx; tao run xxx`",
+    )
+
     new_parser = subparsers.add_parser(
         "new",
         help="Create a tao project",

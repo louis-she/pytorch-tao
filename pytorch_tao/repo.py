@@ -1,8 +1,5 @@
 import os
-import re
 import shutil
-import subprocess
-import sys
 from copy import copy
 from datetime import datetime
 from pathlib import Path
@@ -62,6 +59,9 @@ class Repo:
         Run will call torch.distributed.run.run so this func will rely on the
         command line arguments. Call this function with right command line options.
         """
+        if tao.args.tao_commit:
+            self.git.git.add(all=True)
+            self.git.index.commit(tao.args.tao_commit)
         if not tao.args.tao_dirty and self.git.is_dirty(untracked_files=True):
             raise DirtyRepoError()
         run_dir = Path(tao.cfg["run_dir"])
@@ -86,6 +86,7 @@ class Repo:
         args = copy(tao.args)
         del args.tao_dirty
         del args.tao_cmd
+        del args.tao_commit
         for key, val in metadata.items():
             args.training_script_args += [f"--{key}", val]
         prev_cwd = os.getcwd()

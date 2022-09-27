@@ -38,3 +38,4 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.poetry.scripts]
 tao = "pytorch_tao.cli:main"
+tao_devtool = "pytorch_tao.devtool:main"
