@@ -1,14 +1,11 @@
 __version__ = "0.1.4"
 
 import os
-from argparse import Namespace
+from optuna import Study, Trial
 
 from pytorch_tao.core import ConfigMissingError, ensure_config, load_cfg
 from pytorch_tao.repo import DirtyRepoError, Repo
-from pytorch_tao.args import arguments
-
-
-args: Namespace = None
+from pytorch_tao.args import arguments, _ArgSet
 
 if os.getenv("TAO_REPO"):
     repo = Repo(os.getenv("TAO_REPO"))
@@ -17,7 +14,9 @@ else:
     repo = None
     cfg = None
 
-args = None
+args: _ArgSet = None
+study: Study = None
+trial: Trial = None
 
 
 __all__ = [
@@ -27,6 +26,8 @@ __all__ = [
     "ensure_config",
     "ConfigMissingError",
     "args",
+    "study",
+    "trial",
     "DirtyRepoError",
     "arguments"
 ]

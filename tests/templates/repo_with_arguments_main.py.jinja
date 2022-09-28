@@ -16,4 +16,4 @@ class args:
 
 if __name__ == "__main__":
     with open("./args.json", "w") as f:
-        json.dump(tao.args.__dict__, f)
+        f.write(tao.args.get_json())
