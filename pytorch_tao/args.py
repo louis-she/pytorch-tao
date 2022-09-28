@@ -2,8 +2,9 @@ import argparse
 import json
 import logging
 import sys
-from optuna.distributions import BaseDistribution
 from typing import _GenericAlias, Any, Dict, List, Type
+
+from optuna.distributions import BaseDistribution
 
 import pytorch_tao as tao
 
@@ -33,8 +34,7 @@ class _Arg:
 
 
 class _ArgSet:
-    """A set of _Args
-    """
+    """A set of _Args"""
 
     _args: Dict[str, _Arg]
 
@@ -60,7 +60,7 @@ def arg(default: Any, tune: BaseDistribution):
     return _Arg(default=default, distribution=tune)
 
 
-def arguments(cls: Type):
+def arguments(cls: Type):  # noqa: C901
     """Decorator of class that determine the arguments(hyperparameters).
 
     There are 3 ways to obtain a argument value, in the prior order, they are:

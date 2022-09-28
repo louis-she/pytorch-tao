@@ -1,11 +1,13 @@
 __version__ = "0.1.4"
 
 import os
+
 from optuna import Study, Trial
+
+from pytorch_tao.args import _ArgSet, arguments
 
 from pytorch_tao.core import ConfigMissingError, ensure_config, load_cfg
 from pytorch_tao.repo import DirtyRepoError, Repo
-from pytorch_tao.args import arguments, _ArgSet
 
 if os.getenv("TAO_REPO"):
     repo = Repo(os.getenv("TAO_REPO"))
@@ -29,5 +31,5 @@ __all__ = [
     "study",
     "trial",
     "DirtyRepoError",
-    "arguments"
+    "arguments",
 ]
