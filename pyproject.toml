@@ -26,7 +26,6 @@ usort = "^1.0.5"
 ipdb = "^0.13.9"
 pytest-cov = "^3.0.0"
 
-
 [[tool.poetry.source]]
 name = "tsinghua"
 url = "https://pypi.tuna.tsinghua.edu.cn/simple"

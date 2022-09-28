@@ -1,4 +1,5 @@
 import logging
+import optuna
 import os
 import shutil
 from copy import copy
@@ -64,8 +65,10 @@ class Repo:
         """Is this tao repo exists and valid"""
         return self.path.exists() and self.tao_path.exists() and self.git_path.exists()
 
+    @tao.ensure_config("run_dir", "study_storage")
     def tune(self):
         """Start hyperparameter tunning process"""
+        tao.study = optuna.create_study(tao.cfg.study_storage)
 
     @tao.ensure_config("run_dir")
     def run(self):
