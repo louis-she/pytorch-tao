@@ -1,3 +1,4 @@
+import logging
 import os
 import shutil
 from copy import copy
@@ -30,12 +31,18 @@ class Repo:
             try:
                 self.git = git.Repo(self.path)
             except git.InvalidGitRepositoryError:
-                pass
+                logging.warning("failed to initialze git, is .git dir in tao repo?")
+            try:
+                self.load_cfg()
+            except FileNotFoundError:
+                logging.warning("failed to load config in tao repo")
 
     def init(self):
         self.tao_path.mkdir(exist_ok=False)
         config_content = core.render_tpl(
-            "cfg.yml", name=self.name, run_dir=(self.tao_path / "runs").as_posix()
+            "cfg.yml",
+            name=self.name,
+            run_dir=(self.tao_path / "runs").resolve().as_posix(),
         )
         self.cfg_path.write_text(config_content)
         gitignore_content = core.render_tpl(".gitignore")
@@ -44,9 +51,14 @@ class Repo:
         self.git = git.Repo.init(self.path)
         self.git.git.add(all=True)
         self.git.index.commit("initial commit")
+        self.load_cfg()
 
     def load_cfg(self):
         tao.load_cfg(self.cfg_path)
+
+    def commit_all(self, message: str):
+        self.git.git.add(all=True)
+        self.git.index.commit(message)
 
     def exists(self):
         """Is this tao repo exists and valid"""
@@ -91,12 +103,16 @@ class Repo:
         del args.tao_cmd
         del args.tao_commit
         for key, val in metadata.items():
+            if isinstance(val, bool):
+                args.training_script_args += [f"--{key}"] if val else []
+                continue
             args.training_script_args += [f"--{key}", val]
         prev_cwd = os.getcwd()
         os.chdir(run_fold)
         os.environ[
             "PYTHONPATH"
         ] = f'{run_fold.as_posix()}:{os.getenv("PYTHONPATH", "")}'
+        os.environ["TAO_REPO"] = run_fold.as_posix()
         run(args)
         os.chdir(prev_cwd)
 

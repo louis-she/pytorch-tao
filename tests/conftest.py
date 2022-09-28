@@ -3,6 +3,8 @@ import shutil
 import tempfile
 from pathlib import Path
 
+import jinja2
+
 import pytest
 import pytorch_tao as tao
 
@@ -10,6 +12,19 @@ import pytorch_tao as tao
 @pytest.fixture(autouse=True)
 def reset_env():
     os.environ["TAO_ENV"] = ""
+
+
+@pytest.fixture(scope="session")
+def render_tpl():
+    template_renderer = jinja2.Environment(
+        loader=jinja2.PackageLoader("tests"), autoescape=jinja2.select_autoescape()
+    )
+
+    def render_tpl(template_name, **kwargs) -> str:
+        template = template_renderer.get_template(template_name + ".jinja")
+        return template.render(**kwargs)
+
+    return render_tpl
 
 
 @pytest.fixture(scope="function")
@@ -57,5 +72,16 @@ with (tao.repo.path / "result.json").open("w") as f:
 """
     )
 
+    yield repo
+    shutil.rmtree(temp_dir)
+
+
+@pytest.fixture(scope="function")
+def test_repo_with_arguments(render_tpl):
+    temp_dir = Path(tempfile.mkdtemp())
+    repo_dir = temp_dir / "test_repo_with_arguments"
+    repo = tao.Repo.create(repo_dir)
+    (repo.path / "main.py").write_text(render_tpl("repo_with_arguments_main.py"))
+    repo.commit_all("add main.py")
     yield repo
     shutil.rmtree(temp_dir)

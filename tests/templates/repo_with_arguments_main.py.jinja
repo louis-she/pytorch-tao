@@ -1,0 +1,19 @@
+import json
+from typing import List
+import pytorch_tao as tao
+
+
+@tao.arguments
+class args:
+    trial_name: str
+    optimizer: str
+    model: str = "resnet34"
+    batch_size: int = 32
+    max_epochs: int = 11
+    train_folds: List[int] = [1, 2, 3, 4]
+    val_folds: List[int] = [0,]
+
+
+if __name__ == "__main__":
+    with open("./args.json", "w") as f:
+        json.dump(tao.args.__dict__, f)

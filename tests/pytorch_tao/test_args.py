@@ -1,6 +1,7 @@
 import sys
-import pytest
 from typing import List
+
+import pytest
 import pytorch_tao as tao
 
 
@@ -48,7 +49,9 @@ def test_arguments_default(empty_argv):
 
 
 def test_arguments_passing(empty_argv):
-    command = "mock.py --a 1 --b 1.2 --c hello --d --e 1 2 3 --f 1.1 2.2 3.3 --g hello world"
+    command = (
+        "mock.py --a 1 --b 1.2 --c hello --d --e 1 2 3 --f 1.1 2.2 3.3 --g hello world"
+    )
     sys.argv = command.split(" ")
 
     tao.arguments(_Argument)

@@ -70,7 +70,7 @@ def test_run_dirty(test_repo: tao.Repo):
         command = f"run {(test_repo.path / 'scripts' / 'train.py').as_posix()} --test --epochs 10".split(
             " "
         )
-        core.parse_args(command)
+        core.parse_tao_args(command)
         test_repo.run()
 
 
@@ -82,7 +82,7 @@ def test_run_with_dirty_option(test_repo: tao.Repo):
     command = f"run --dirty {(test_repo.path / 'scripts' / 'train.py').as_posix()} --test --epochs 10".split(
         " "
     )
-    core.parse_args(command)
+    core.parse_tao_args(command)
     test_repo.run()
     with (test_repo.path / "result.json").open("r") as f:
         result = json.load(f)
@@ -100,7 +100,6 @@ def test_run_with_dirty_option(test_repo: tao.Repo):
     assert "--epochs" in argv
     assert "10" == option_value(argv, "--epochs")
     assert "--dirty" in argv
-    assert "True" == option_value(argv, "--dirty")
     assert "--commit" in argv
     assert test_repo.git.head.ref.commit.hexsha == option_value(argv, "--commit")
 
@@ -113,7 +112,7 @@ def test_run_clean_repo(test_repo: tao.Repo):
         f"run {(test_repo.path / 'scripts' / 'train.py').as_posix()} --test --epochs 10"
     )
     command = command.split(" ")
-    core.parse_args(command)
+    core.parse_tao_args(command)
     test_repo.run()
 
     hash = test_repo.git.head.ref.commit.hexsha[:8]
@@ -127,8 +126,7 @@ def test_run_clean_repo(test_repo: tao.Repo):
         result = json.load(f)
 
     argv = result["argv"]
-    assert "--dirty" in argv
-    assert "False" == option_value(argv, "--dirty")
+    assert "--dirty" not in argv
     assert result["some_lib_path"] == (run_dir / "some_lib.py").as_posix()
     assert (
         result["some_package_path"]
@@ -139,7 +137,29 @@ def test_run_clean_repo(test_repo: tao.Repo):
 def test_run_commit(test_repo: tao.Repo):
     command = f"run --commit some_comments {(test_repo.path / 'scripts' / 'train.py').as_posix()} --test --epochs 10"
     command = command.split(" ")
-    core.parse_args(command)
+    core.parse_tao_args(command)
     test_repo.run()
     assert not test_repo.git.is_dirty()
     assert test_repo.git.head.ref.commit.message == "some_comments"
+
+
+def test_run_with_arguments(test_repo_with_arguments: tao.Repo):
+    command = (
+        f"run {(test_repo_with_arguments.path / 'main.py').as_posix()} "
+        f"--trial_name test --max_epochs 10 --train_folds 1 2 3"
+    )
+    command = command.split(" ")
+    core.parse_tao_args(command)
+    test_repo_with_arguments.run()
+
+    hash = test_repo_with_arguments.git.head.ref.commit.hexsha[:8]
+    run_dir = test_repo_with_arguments.path / ".tao" / "runs" / hash
+    with (run_dir / "args.json").open("r") as f:
+        result = json.load(f)
+    assert result["trial_name"] == "test"
+    assert result["optimizer"] is None
+    assert result["train_folds"] == [1, 2, 3]
+    assert result["val_folds"] == [0]
+    assert result["model"] == "resnet34"
+    assert result["max_epochs"] == 10
+    assert result["batch_size"] == 32
