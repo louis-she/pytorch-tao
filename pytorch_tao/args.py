@@ -50,13 +50,17 @@ class _ArgSet:
         self._args[arg.key] = arg
 
     def get_distribution(self):
-        return {k: v for k, v in self._args.items() if v.distribution is not None}
+        return {
+            k: v.distribution
+            for k, v in self._args.items()
+            if v.distribution is not None
+        }
 
     def get_json(self) -> str:
         return json.dumps({k: v.get() for k, v in self._args.items()})
 
 
-def arg(default: Any, tune: BaseDistribution):
+def arg(default: Any, tune: BaseDistribution = None):
     return _Arg(default=default, distribution=tune)
 
 
@@ -106,8 +110,9 @@ def arguments(cls: Type):  # noqa: C901
     for arg in argset._args.values():
         if f"--{arg.key}" in sys.argv:
             arg.set_value(getattr(parser_args, arg.key))
-        if tao.trial and arg.key in tao.trial.params:
+        elif tao.trial and arg.key in tao.trial.params:
             arg.set_value(tao.trial.params[arg.key])
-        arg.set_value(getattr(parser_args, arg.key, None))
+        else:
+            arg.set_value(getattr(parser_args, arg.key, None))
 
     tao.args = argset

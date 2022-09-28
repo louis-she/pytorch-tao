@@ -31,7 +31,7 @@ pytest-cov = "^3.0.0"
 name = "tsinghua"
 url = "https://pypi.tuna.tsinghua.edu.cn/simple"
 default = false
-secondary = false
+secondary = true
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]

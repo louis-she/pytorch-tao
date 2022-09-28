@@ -4,7 +4,7 @@ import os
 
 from optuna import Study, Trial
 
-from pytorch_tao.args import _ArgSet, arguments
+from pytorch_tao.args import _ArgSet, arg, arguments
 
 from pytorch_tao.core import ConfigMissingError, ensure_config, load_cfg
 from pytorch_tao.repo import DirtyRepoError, Repo
@@ -32,4 +32,5 @@ __all__ = [
     "trial",
     "DirtyRepoError",
     "arguments",
+    "arg",
 ]

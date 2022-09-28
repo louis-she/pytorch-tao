@@ -1,8 +1,11 @@
 import sys
 from typing import List
 
+import optuna
+
 import pytest
 import pytorch_tao as tao
+from optuna.distributions import CategoricalDistribution, FloatDistribution
 
 
 class _Argument:
@@ -23,6 +26,13 @@ class _Argument:
     l: List[int] = [1, 2, 3]
     m: List[float] = [1.1, 2.2, 3.3]
     n: List[str] = ["hello", "world"]
+
+
+class _DistributionArgument:
+    a: int = 1
+    b: int = tao.arg(default=2)
+    c: float = tao.arg(default=18.00, tune=FloatDistribution(19.0, 20.0))
+    d: str = tao.arg(default="SGD", tune=CategoricalDistribution(["Adam", "AdamW"]))
 
 
 @pytest.fixture(scope="function")
@@ -64,3 +74,14 @@ def test_arguments_passing(empty_argv):
     assert tao.args.e == [1, 2, 3]
     assert tao.args.f == [1.1, 2.2, 3.3]
     assert tao.args.g == ["hello", "world"]
+
+
+def test_arguments_prior(empty_argv):
+    command = "mock.py --c 17.0"
+    sys.argv = command.split(" ")
+    tao.study = optuna.create_study()
+    tao.arguments(_DistributionArgument)
+
+    assert tao.args.c == 17.0
+    assert tao.args.d in ["Adam", "AdamW"]
+    assert tao.args.a == 1
