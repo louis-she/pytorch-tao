@@ -11,7 +11,10 @@ import pytorch_tao as tao
 
 @pytest.fixture(autouse=True)
 def reset_env():
-    os.environ["TAO_ENV"] = ""
+    try:
+        os.environ.pop("TAO_ENV")
+    except KeyError:
+        pass
 
 
 @pytest.fixture(scope="session")
@@ -33,15 +36,16 @@ def test_repo():
     repo_dir = temp_dir / "test_repo"
     repo = tao.Repo.create(repo_dir)
     test_cfg = """
-default:
-    run_dir: ./runs/
-    dataset_dir: /dataset/dir/in/default/cfg
-    kaggle_username: snaker
-    kaggle_key: xxxxxx
-    kaggle_dataset_id: the_dataset_id
-colab:
-    dataset_dir: /dataset/dir/in/colab/cfg
-    mount_drive: true
+class default:
+    run_dir = "./runs/"
+    dataset_dir = "/dataset/dir/in/default/cfg"
+    kaggle_username = "snaker"
+    kaggle_key = "xxxxxx"
+    kaggle_dataset_id = "the_dataset_id"
+
+class colab(default):
+    dataset_dir = "/dataset/dir/in/colab/cfg"
+    mount_drive = True
 """
     repo.cfg_path.write_text(test_cfg)
     tao.load_cfg(repo.cfg_path)

@@ -27,7 +27,7 @@ class Repo:
         self.name = path.name
         self.tao_path = path / ".tao"
         self.git_path = path / ".git"
-        self.cfg_path = self.tao_path / "cfg.yml"
+        self.cfg_path = self.tao_path / "cfg.py"
         if self.path.exists():
             try:
                 self.git = git.Repo(self.path)
@@ -41,7 +41,7 @@ class Repo:
     def init(self):
         self.tao_path.mkdir(exist_ok=False)
         config_content = core.render_tpl(
-            "cfg.yml",
+            "cfg.py",
             name=self.name,
             run_dir=(self.tao_path / "runs").resolve().as_posix(),
         )
@@ -68,7 +68,19 @@ class Repo:
     @tao.ensure_config("run_dir", "study_storage")
     def tune(self):
         """Start hyperparameter tunning process"""
-        tao.study = optuna.create_study(tao.cfg.study_storage)
+        if self.git.is_dirty():
+            raise DirtyRepoError()
+        tao.study = optuna.create_study(
+            name=tao.args.tao_name,
+            storage=tao.cfg.study_storage,
+            load_if_exists=tao.args.tao_duplicated,
+            direction=tao.cfg.tune_direction
+        )
+        os.environ["TAO_TUNE"] = tao.args.tao_tune_name
+        for i in range(tao.args.tao_tune_max_trials):
+            logging.info(f"tune {tao.args.tao_tune_name} the {i+1} time")
+            self.run()
+            logging.info(f"tune {tao.args.tao_tune_name} {i+1} has finished")
 
     @tao.ensure_config("run_dir")
     def run(self):
@@ -82,7 +94,7 @@ class Repo:
             self.git.index.commit(tao.args.tao_commit)
         if not tao.args.tao_dirty and self.git.is_dirty(untracked_files=True):
             raise DirtyRepoError()
-        run_dir = Path(tao.cfg["run_dir"])
+        run_dir = Path(tao.cfg.run_dir)
         run_dir = run_dir if run_dir.is_absolute() else self.path / run_dir
         metadata = {
             "dirty": self.git.is_dirty(untracked_files=True),
@@ -96,11 +108,8 @@ class Repo:
             # run process in run dir
             hexsha = self.git.head.ref.commit.hexsha[:8]
             run_fold = run_dir / hexsha
-            for i in range(1000):
-                if not run_fold.exists():
-                    break
-                run_fold = run_dir / f"{hexsha}_{i}"
-            git.Repo.clone_from(self.path.as_posix(), run_fold.as_posix())
+            if not run_fold.exists():
+                git.Repo.clone_from(self.path.as_posix(), run_fold.as_posix())
         args = copy(tao.args)
         del args.tao_dirty
         del args.tao_cmd
@@ -152,8 +161,8 @@ class Repo:
 
         # kaggle do authentication when importing the package
         # so the import goes here
-        os.environ["KAGGLE_USERNAME"] = tao.cfg["kaggle_username"]
-        os.environ["KAGGLE_KEY"] = tao.cfg["kaggle_key"]
+        os.environ["KAGGLE_USERNAME"] = tao.cfg.kaggle_username
+        os.environ["KAGGLE_KEY"] = tao.cfg.kaggle_key
         import kaggle
 
         tempdir = Path(mkdtemp())
@@ -170,7 +179,7 @@ class Repo:
   ]
 }
 """ % (
-            tao.cfg["kaggle_dataset_id"],
+            tao.cfg.kaggle_dataset_id,
         )
         metadata_file.write_text(metadata)
         kaggle.api.dataset_create_version(

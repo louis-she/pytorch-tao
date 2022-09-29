@@ -1,0 +1,31 @@
+# default environment configs
+class default:
+    name = "{{ name }}"
+
+    # tao run path
+    run_dir = "{{ run_dir }}"
+
+    # It's highly recommended to add the path related options
+    # and use them in your code
+    dataset_root = None
+    log_root = None
+
+    # If you want to enable functions related with Kaggle
+    # (e.g. repo.sync_code_to_kaggle), config the following block.
+    kaggle_username = None
+    kaggle_key = None
+    kaggle_code_dataset_id = None
+
+    wandb_secret = None
+
+    # tune options
+    optuna_study_storage = None
+    tune_direction = None
+
+
+# add any other environments as you want, set TAO_ENV to switch
+# between environments.
+class colab(default):
+
+  # override default `dataset_root` option
+  dataset_root = None

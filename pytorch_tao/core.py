@@ -1,12 +1,13 @@
 import argparse
+from importlib import import_module
 import os
+import sys
 from functools import wraps
 from pathlib import Path
 from typing import Callable, Dict, List
 
 import jinja2
 
-import yaml
 from torch.distributed.run import get_args_parser
 
 import pytorch_tao as tao
@@ -21,12 +22,13 @@ def load_cfg(cfg_path: Path) -> Dict:
     inherit from default.
     """
     config_name = os.getenv("TAO_ENV", "default")
-    with cfg_path.open("r") as f:
-        config = yaml.load(f, Loader=yaml.Loader) or {}
-    default_config = config.get("default", {})
-    env_config = config.get(config_name, {})
-    default_config.update(env_config)
-    tao.cfg = default_config
+    module_name = cfg_path.name.replace(".py", "")
+    sys.path.insert(0, cfg_path.parent.as_posix())
+    print("===>", cfg_path.parent.as_posix(), os.listdir(cfg_path.parent), cfg_path.name.replace(".py", ""))
+    cfg_module = import_module(module_name)
+    tao.cfg = getattr(cfg_module, config_name)
+    sys.path.pop(0)
+    del sys.modules[module_name]
 
 
 class ConfigMissingError(Exception):
@@ -45,7 +47,7 @@ def ensure_config(*keys):
         @wraps(func)
         def real(*args, **kwargs):
             missing_keys = [
-                key for key in keys if key not in tao.cfg or not tao.cfg[key]
+                key for key in keys if not hasattr(tao.cfg, key)
             ]
             if len(missing_keys) != 0:
                 raise ConfigMissingError(missing_keys, func)

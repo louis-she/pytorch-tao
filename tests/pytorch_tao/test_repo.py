@@ -41,17 +41,17 @@ def test_find_repo_by_file(test_repo: tao.Repo):
 
 
 def test_load_config(test_repo: tao.Repo):
-    assert tao.cfg["dataset_dir"] == "/dataset/dir/in/default/cfg"
-    assert tao.cfg["kaggle_username"] == "snaker"
-    assert tao.cfg["kaggle_key"] == "xxxxxx"
-    assert "mount_drive" not in tao.cfg
+    assert tao.cfg.dataset_dir == "/dataset/dir/in/default/cfg"
+    assert tao.cfg.kaggle_username == "snaker"
+    assert tao.cfg.kaggle_key == "xxxxxx"
+    assert not hasattr(tao.cfg, "mount_drive")
 
     os.environ["TAO_ENV"] = "colab"
     tao.load_cfg(test_repo.cfg_path)
-    assert tao.cfg["dataset_dir"] == "/dataset/dir/in/colab/cfg"
-    assert tao.cfg["kaggle_username"] == "snaker"
-    assert tao.cfg["kaggle_key"] == "xxxxxx"
-    assert tao.cfg["mount_drive"]
+    assert tao.cfg.dataset_dir == "/dataset/dir/in/colab/cfg"
+    assert tao.cfg.kaggle_username == "snaker"
+    assert tao.cfg.kaggle_key == "xxxxxx"
+    assert tao.cfg.mount_drive
 
 
 def test_sync_code_to_kaggle(test_repo: tao.Repo):
