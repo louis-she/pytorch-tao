@@ -1,8 +1,8 @@
 import argparse
-from importlib import import_module
 import os
 import sys
 from functools import wraps
+from importlib import import_module
 from pathlib import Path
 from typing import Callable, Dict, List
 
@@ -24,7 +24,12 @@ def load_cfg(cfg_path: Path) -> Dict:
     config_name = os.getenv("TAO_ENV", "default")
     module_name = cfg_path.name.replace(".py", "")
     sys.path.insert(0, cfg_path.parent.as_posix())
-    print("===>", cfg_path.parent.as_posix(), os.listdir(cfg_path.parent), cfg_path.name.replace(".py", ""))
+    print(
+        "===>",
+        cfg_path.parent.as_posix(),
+        os.listdir(cfg_path.parent),
+        cfg_path.name.replace(".py", ""),
+    )
     cfg_module = import_module(module_name)
     tao.cfg = getattr(cfg_module, config_name)
     sys.path.pop(0)
@@ -46,9 +51,7 @@ def ensure_config(*keys):
     def decorator(func):
         @wraps(func)
         def real(*args, **kwargs):
-            missing_keys = [
-                key for key in keys if not hasattr(tao.cfg, key)
-            ]
+            missing_keys = [key for key in keys if not hasattr(tao.cfg, key)]
             if len(missing_keys) != 0:
                 raise ConfigMissingError(missing_keys, func)
             return func(*args, **kwargs)

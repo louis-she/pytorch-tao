@@ -1,5 +1,4 @@
 import logging
-import optuna
 import os
 import shutil
 from copy import copy
@@ -9,6 +8,7 @@ from tempfile import mkdtemp
 from typing import Union
 
 import git
+import optuna
 from torch.distributed.run import run
 
 import pytorch_tao as tao
@@ -74,7 +74,7 @@ class Repo:
             name=tao.args.tao_name,
             storage=tao.cfg.study_storage,
             load_if_exists=tao.args.tao_duplicated,
-            direction=tao.cfg.tune_direction
+            direction=tao.cfg.tune_direction,
         )
         os.environ["TAO_TUNE"] = tao.args.tao_tune_name
         for i in range(tao.args.tao_tune_max_trials):
