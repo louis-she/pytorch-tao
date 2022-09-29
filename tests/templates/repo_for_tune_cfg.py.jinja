@@ -1,0 +1,13 @@
+import optuna
+
+
+# default environment configs
+class default:
+    name = "repo_for_tune"
+
+    # tao run path
+    run_dir = "{{ run_dir }}"
+
+    # tune options
+    study_storage = "sqlite:///{{ sqlite_storage_path }}"
+    tune_direction = "minimize"

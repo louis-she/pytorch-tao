@@ -1,0 +1,12 @@
+import pytorch_tao as tao
+from optuna import distributions
+
+
+@tao.arguments
+class args:
+    x: float = tao.arg(default=0.0, tune=distributions.FloatDistribution(-2, 2))
+
+
+if __name__ == "__main__":
+    score = (tao.args.x - 2) ** 2
+    tao.tell(score)

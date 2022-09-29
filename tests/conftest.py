@@ -89,3 +89,22 @@ def test_repo_with_arguments(render_tpl):
     repo.commit_all("add main.py")
     yield repo
     shutil.rmtree(temp_dir)
+
+
+@pytest.fixture(scope="function")
+def test_repo_for_tune(render_tpl):
+    temp_dir = Path(tempfile.mkdtemp())
+    repo_dir = temp_dir / "test_repo_for_tune"
+    repo = tao.Repo.create(repo_dir)
+    (repo.path / "main.py").write_text(render_tpl("repo_for_tune_main.py"))
+    (repo.path / ".tao" / "cfg.py").write_text(
+        render_tpl(
+            "repo_for_tune_cfg.py",
+            sqlite_storage_path=(repo.tao_path / "study.db").as_posix(),
+            run_dir=(repo.tao_path / "runs").as_posix(),
+        )
+    )
+    tao.load_cfg(repo.cfg_path)
+    repo.commit_all("add all")
+    yield repo
+    shutil.rmtree(temp_dir)

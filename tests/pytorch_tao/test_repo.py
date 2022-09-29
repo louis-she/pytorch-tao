@@ -4,6 +4,8 @@ import tempfile
 from pathlib import Path
 from unittest.mock import MagicMock
 
+import optuna
+
 import pytest
 import pytorch_tao as tao
 from pytorch_tao import core
@@ -163,3 +165,18 @@ def test_run_with_arguments(test_repo_with_arguments: tao.Repo):
     assert result["model"] == "resnet34"
     assert result["max_epochs"] == 10
     assert result["batch_size"] == 32
+
+
+def test_tune(test_repo_for_tune: tao.Repo):
+    command = (
+        "tune --name test_tune --max_trials 10 "
+        f"{(test_repo_for_tune.path / 'main.py').as_posix()}"
+    )
+    command = command.split(" ")
+    core.parse_tao_args(command)
+    test_repo_for_tune.tune()
+    study = optuna.load_study(
+        study_name="test_tune",
+        storage=f"sqlite:////{(test_repo_for_tune.tao_path / 'study.db').as_posix()}",
+    )
+    assert len(study.trials) == 10

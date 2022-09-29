@@ -28,7 +28,7 @@ class Repo:
         self.tao_path = path / ".tao"
         self.git_path = path / ".git"
         self.cfg_path = self.tao_path / "cfg.py"
-        if self.path.exists():
+        if self.tao_path.exists():
             try:
                 self.git = git.Repo(self.path)
             except git.InvalidGitRepositoryError:
@@ -47,7 +47,7 @@ class Repo:
         )
         self.cfg_path.write_text(config_content)
         gitignore_content = core.render_tpl(".gitignore")
-        (self.tao_path / ".gitignore").write_text(gitignore_content)
+        (self.path / ".gitignore").write_text(gitignore_content)
 
         self.git = git.Repo.init(self.path)
         self.git.git.add(all=True)
@@ -70,10 +70,14 @@ class Repo:
         """Start hyperparameter tunning process"""
         if self.git.is_dirty():
             raise DirtyRepoError()
+        if tao.cfg.study_storage is None:
+            raise ValueError("In memory study is not supported in tao")
+        tao.args.tao_commit = False
+        tao.args.tao_dirty = False
         tao.study = optuna.create_study(
-            name=tao.args.tao_name,
+            study_name=tao.args.tao_tune_name,
             storage=tao.cfg.study_storage,
-            load_if_exists=tao.args.tao_duplicated,
+            load_if_exists=tao.args.tao_tune_duplicated,
             direction=tao.cfg.tune_direction,
         )
         os.environ["TAO_TUNE"] = tao.args.tao_tune_name
@@ -131,8 +135,7 @@ class Repo:
     @classmethod
     def create(cls, path: Union[Path, str]):
         """Create a tao project from scratch"""
-        if isinstance(path, str):
-            path = Path(path)
+        path = Path(path)
         path.mkdir(exist_ok=False)
         repo = cls(path)
         repo.init()
