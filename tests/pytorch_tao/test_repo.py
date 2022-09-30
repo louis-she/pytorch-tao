@@ -25,6 +25,9 @@ def test_create_repo():
         repo = tao.Repo.create(tmpdir / "random_project")
         assert repo.exists()
         assert repo.git.head.ref.commit.message == "initial commit"
+        assert repo.tao_path.is_dir()
+        assert repo.cfg_path.is_file()
+        assert (repo.path / ".gitignore").is_file()
     assert not repo.exists()
 
 
