@@ -1,6 +1,7 @@
 import torch
-from pytorch_tao.plugins import base, events
+from pytorch_tao.plugins import base
 import pytorch_tao as tao
+from ignite.engine import Events
 
 
 class Scheduler(base.TrainPlugin):
@@ -9,6 +10,7 @@ class Scheduler(base.TrainPlugin):
         super().__init__()
         self._scheduler = torch_scheduler
 
-    @events.iteration_completed()
+    @tao.on(Events.ITERATION_COMPLETED)
     def _step(self):
-        pass
+        self._scheduler.step()
+        tao.tracker.add_points({"lr": self._scheduler.get_lr()[0]})

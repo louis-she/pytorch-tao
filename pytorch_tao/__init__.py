@@ -10,6 +10,9 @@ from pytorch_tao.args import _ArgSet, arg, arguments
 from pytorch_tao.core import ConfigMissingError, ensure_config, load_cfg
 from pytorch_tao.repo import DirtyRepoError, Repo
 from pytorch_tao.tune import tell
+from pytorch_tao.plugins.events import on
+from pytorch_tao.trackers import set_tracker, Tracker
+from pytorch_tao.trainer import Trainer
 
 
 args: _ArgSet = None
@@ -17,6 +20,7 @@ study: Study = None
 trial: Trial = None
 cfg: Any = None
 repo: Repo = None
+tracker = Tracker()
 
 if os.getenv("TAO_REPO"):
     repo = Repo(os.getenv("TAO_REPO"))
@@ -39,4 +43,6 @@ __all__ = [
     "arguments",
     "arg",
     "tell",
+    "on",
+    "Trainer"
 ]

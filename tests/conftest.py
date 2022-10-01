@@ -31,6 +31,17 @@ def render_tpl():
 
 
 @pytest.fixture(scope="function")
+def trainer():
+    return tao.Trainer(
+        train_func=lambda e, b: 1,
+        train_loader=range(100),
+        val_func=lambda e, b: 1,
+        val_loader=range(100),
+        max_epochs=5,
+    )
+
+
+@pytest.fixture(scope="function")
 def test_repo():
     temp_dir = Path(tempfile.mkdtemp())
     repo_dir = temp_dir / "test_repo"
