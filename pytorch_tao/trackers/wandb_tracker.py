@@ -1,10 +1,11 @@
 from typing import Dict
-from pytorch_tao.trackers.base import Tracker
+
 import numpy as np
+
+from pytorch_tao.trackers.base import Tracker
 
 
 class WandbTracker(Tracker):
-
     def __init__(self):
         pass
 

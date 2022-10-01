@@ -21,4 +21,5 @@ def on(event: Callable):
     def decorator(func):
         func._tao_event = event
         return func
+
     return decorator

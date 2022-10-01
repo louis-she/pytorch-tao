@@ -1,10 +1,9 @@
-from unittest.mock import MagicMock
 import pytest
 import pytorch_tao as tao
-from pytorch_tao.plugins.scheduler import Scheduler
-from torch.optim.lr_scheduler import StepLR
-from torch.optim import SGD
 import torch
+from pytorch_tao.plugins.scheduler import Scheduler
+from torch.optim import SGD
+from torch.optim.lr_scheduler import StepLR
 
 
 @pytest.fixture(scope="function")
@@ -18,8 +17,10 @@ def func_counter():
         def _real(*args, **kwargs):
             _real.called_count += 1
             return func(*args, **kwargs)
+
         _real.called_count = 0
         return _real
+
     return func_counter
 
 

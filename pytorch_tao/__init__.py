@@ -8,11 +8,11 @@ from optuna import load_study, Study, Trial
 from pytorch_tao.args import _ArgSet, arg, arguments
 
 from pytorch_tao.core import ConfigMissingError, ensure_config, load_cfg
-from pytorch_tao.repo import DirtyRepoError, Repo
-from pytorch_tao.tune import tell
 from pytorch_tao.plugins.events import on
+from pytorch_tao.repo import DirtyRepoError, Repo
 from pytorch_tao.trackers import set_tracker, Tracker
 from pytorch_tao.trainer import Trainer
+from pytorch_tao.tune import tell
 
 
 args: _ArgSet = None
@@ -44,5 +44,6 @@ __all__ = [
     "arg",
     "tell",
     "on",
-    "Trainer"
+    "Trainer",
+    "set_tracker",
 ]

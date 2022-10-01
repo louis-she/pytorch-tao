@@ -1,9 +1,9 @@
 from typing import Dict
+
 import numpy as np
 
 
 class Tracker:
-
     def set_global_step(self, step: int):
         self.global_step = step
 

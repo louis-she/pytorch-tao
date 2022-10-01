@@ -1,10 +1,9 @@
 import pytorch_tao as tao
-from pytorch_tao.plugins.base import TrainPlugin, ValPlugin
 from ignite.engine import Events
+from pytorch_tao.plugins.base import TrainPlugin, ValPlugin
 
 
 class Counter:
-
     def __init__(self):
         super().__init__()
         self.count = 0

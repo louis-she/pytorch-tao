@@ -1,5 +1,7 @@
 from typing import Callable, Iterable
+
 from ignite.engine import Engine, Events
+
 from pytorch_tao.plugins.base import BasePlugin, TrainPlugin, ValPlugin
 
 
@@ -13,7 +15,7 @@ class Trainer:
         val_func: Callable = None,
         val_loader: Iterable = None,
         val_stride: int = 1,
-        max_epochs: int = 1e9
+        max_epochs: int = 1e9,
     ):
         self.train_engine = Engine(train_func)
         self.train_loader = train_loader
@@ -23,8 +25,7 @@ class Trainer:
         self.max_epochs = max_epochs
 
         self.train_engine.add_event_handler(
-            Events.EPOCH_COMPLETED(every=val_stride),
-            self._do_eval
+            Events.EPOCH_COMPLETED(every=val_stride), self._do_eval
         )
 
     def _do_eval(self):
