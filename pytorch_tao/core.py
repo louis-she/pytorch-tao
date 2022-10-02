@@ -151,3 +151,11 @@ def dispatch():
     if tao.args is None:
         raise RuntimeError("Should parse args before dispatch")
     _cmd[tao.args.tao_cmd]()
+
+
+def on(event: Callable):
+    def decorator(func):
+        func._tao_event = event
+        return func
+
+    return decorator
