@@ -25,8 +25,8 @@ def test_base_plugin_init(empty_base_plugin: base.TrainPlugin):
 
 
 def test_train_plugin_init(empty_train_plugin: base.TrainPlugin):
-    assert empty_train_plugin.attach_to == "train_engine"
+    assert empty_train_plugin.attach_to == "train"
 
 
 def test_val_plugin_init(empty_val_plugin: base.ValPlugin):
-    assert empty_val_plugin.attach_to == "val_engine"
+    assert empty_val_plugin.attach_to == "val"

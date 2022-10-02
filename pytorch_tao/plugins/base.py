@@ -5,6 +5,7 @@ class BasePlugin:
     engine: Engine
 
     def __init__(self, attach_to: str = None):
+        self.attach_to = attach_to
         self.engine = None
 
     def set_engine(self, engine: Engine):
@@ -24,8 +25,10 @@ class BasePlugin:
 
 
 class TrainPlugin(BasePlugin):
-    pass
+    def __init__(self):
+        super().__init__("train")
 
 
 class ValPlugin(BasePlugin):
-    pass
+    def __init__(self):
+        super().__init__("val")
