@@ -38,7 +38,6 @@ def test_use_val_plugin(trainer: tao.Trainer):
 
 
 def test_trainer_train_decorator(fake_mnist_trainer: tao.Trainer):
-
     @fake_mnist_trainer.train()
     def _(images, labels):
         assert images.shape == torch.Size((4, 1, 28, 28))
@@ -63,7 +62,6 @@ def test_trainer_train_decorator_cuda_device(fake_mnist_trainer: tao.Trainer):
 
 
 def test_trainer_train_decorator_custom_fields(fake_mnist_trainer: tao.Trainer):
-
     @fake_mnist_trainer.train(fields=[0])
     def _(images, *args):
         assert images.shape == torch.Size((4, 1, 28, 28))
@@ -73,7 +71,6 @@ def test_trainer_train_decorator_custom_fields(fake_mnist_trainer: tao.Trainer):
 
 
 def test_trainer_train_decorator_no_grad(fake_mnist_trainer: tao.Trainer):
-
     @fake_mnist_trainer.train(grad=False)
     def _(images, labels):
         logits = fake_mnist_trainer.model(images)
@@ -81,16 +78,19 @@ def test_trainer_train_decorator_no_grad(fake_mnist_trainer: tao.Trainer):
         loss.backward()
         fake_mnist_trainer.train_engine.should_terminate = True
 
-    with pytest.raises(RuntimeError, match="element 0 of tensors does not require grad and does not have a grad_fn"):
+    with pytest.raises(
+        RuntimeError,
+        match="element 0 of tensors does not require grad and does not have a grad_fn",
+    ):
         fake_mnist_trainer.fit(max_epochs=1)
 
 
 def test_trainer_train_decorator_grad(fake_mnist_trainer: tao.Trainer):
-
     @fake_mnist_trainer.train(grad=True)
     def _(images, labels):
         logits = fake_mnist_trainer.model(images)
         loss = torch.nn.functional.cross_entropy(logits, labels)
         loss.backward()
         fake_mnist_trainer.train_engine.should_terminate = True
+
     fake_mnist_trainer.fit(max_epochs=1)

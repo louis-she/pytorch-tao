@@ -1,6 +1,6 @@
 import functools
-from functools import wraps
 import logging
+from functools import wraps
 from typing import Callable, Iterable
 
 import torch
@@ -40,7 +40,9 @@ class Trainer:
     def _do_eval(self):
         self.val_engine.run(self.val_loader)
 
-    def forward(self, mode: str, fields=None, amp=False, grad: bool = True):
+    def forward(  # noqa: C901
+        self, mode: str, fields=None, amp=False, grad: bool = True
+    ):
         if mode not in ["train", "eval"]:
             raise ValueError("mode should be train or eval")
         if mode == "train" and self.train_func is not None:

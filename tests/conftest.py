@@ -1,7 +1,6 @@
 import os
 import shutil
 import tempfile
-import torchvision
 from pathlib import Path
 
 import jinja2
@@ -11,6 +10,7 @@ import torch
 
 import torch.nn as nn
 import torch.nn.functional as F
+import torchvision
 from ignite.metrics import Metric as IMetric
 
 
@@ -99,9 +99,7 @@ def trainer():
 @pytest.fixture(scope="function")
 def fake_mnist_trainer():
     dataset = torchvision.datasets.FakeData(
-        size=100,
-        image_size=(1, 28, 28),
-        transform=torchvision.transforms.ToTensor()
+        size=100, image_size=(1, 28, 28), transform=torchvision.transforms.ToTensor()
     )
     train_set = torch.utils.data.Subset(dataset, range(0, 80))
     val_set = torch.utils.data.Subset(dataset, range(80, 100))
