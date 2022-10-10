@@ -36,12 +36,13 @@ class Trainer:
     def _do_eval(self):
         self.val_engine.run(self.val_loader)
 
-    def forward(self, mode: str, amp=False, fields=None):
+    def forward(self, mode: str, amp=False, fields=None, grad: bool=True):
         if mode not in ["train", "eval"]:
             raise ValueError("mode should be train or eval")
 
         def decorator(func: Callable):
             @torch.autocast(self.device, enabled=amp)
+            @torch.set_grad_enabled(grad)
             @wraps(func)
             def real(batch):
                 getattr(self.model, mode)()
