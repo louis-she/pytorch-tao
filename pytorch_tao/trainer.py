@@ -97,7 +97,6 @@ class Trainer:
             raise ValueError("base plugin should maunally attach to engine")
 
     def fit(
-        self, train_loader: Iterator, val_loader: Iterator = None, *, max_epochs: int
+        self, *, max_epochs: int
     ):
-        self.val_loader = val_loader
-        self.train_engine.run(train_loader, max_epochs=max_epochs)
+        self.train_engine.run(self.train_loader, max_epochs=max_epochs)

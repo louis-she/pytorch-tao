@@ -30,7 +30,7 @@ def test_scheduler_step_lr(trainer: tao.Trainer, optimizer: SGD, func_counter):
     _ori_add_points = tao.tracker.add_points
     tao.tracker.add_points = func_counter(tao.tracker.add_points)
     trainer.use(Scheduler(step_scheduler))
-    trainer.start()
+    trainer.fit(max_epochs=5)
     assert step_scheduler.step.called_count == 500
     assert tao.tracker.add_points.called_count == 500
     tao.tracker.add_points = _ori_add_points

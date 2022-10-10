@@ -24,12 +24,12 @@ class TestValPlugin(Counter, ValPlugin):
 def test_use_train_plugin(trainer: tao.Trainer):
     train_plugin = TestTrainPlugin()
     trainer.use(train_plugin)
-    trainer.start()
+    trainer.fit(max_epochs=5)
     assert train_plugin.count == 5
 
 
 def test_use_val_plugin(trainer: tao.Trainer):
     val_plugin = TestValPlugin()
     trainer.use(val_plugin)
-    trainer.start()
+    trainer.fit(max_epochs=5)
     assert val_plugin.count == 5

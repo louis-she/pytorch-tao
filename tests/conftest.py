@@ -92,7 +92,6 @@ def trainer():
         train_loader=range(100),
         val_func=lambda e, b: 1,
         val_loader=range(100),
-        max_epochs=5,
     )
 
 
