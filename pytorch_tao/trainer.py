@@ -1,5 +1,6 @@
 import functools
 from functools import wraps
+import logging
 from typing import Callable, Iterable
 
 import torch
@@ -14,21 +15,24 @@ class Trainer:
 
     def __init__(
         self,
-        device: int = None,
+        device: torch.device = torch.device("cpu"),
         model: torch.nn.Module = None,
         train_loader: Iterable = None,
         val_loader: Iterable = None,
-        train_func: Callable = None,
-        val_func: Callable = None,
+        train_func: Callable = lambda e, b: None,
+        val_func: Callable = lambda e, b: None,
         val_stride: int = 1,
     ):
+        if isinstance(device, str):
+            device = torch.device(device)
         self.device = device
         self.model = model
-        self.train_engine = Engine(train_func)
         self.train_loader = train_loader
-        if val_func:
-            self.val_engine = Engine(val_func)
-            self.val_loader = val_loader
+        self.val_loader = val_loader
+        self.train_func = train_func
+        self.val_func = val_func
+        self.train_engine = Engine(self.train_func)
+        self.val_engine = Engine(self.val_func)
         self.train_engine.add_event_handler(
             Events.EPOCH_COMPLETED(every=val_stride), self._do_eval
         )
@@ -36,17 +40,22 @@ class Trainer:
     def _do_eval(self):
         self.val_engine.run(self.val_loader)
 
-    def forward(self, mode: str, amp=False, fields=None, grad: bool = True):
+    def forward(self, mode: str, fields=None, amp=False, grad: bool = True):
         if mode not in ["train", "eval"]:
             raise ValueError("mode should be train or eval")
+        if mode == "train" and self.train_func is not None:
+            logging.warning("train decorator will override train_func")
+        if mode == "eval" and self.val_func is not None:
+            logging.warning("eval decorator will override val_func")
 
         def decorator(func: Callable):
-            @torch.autocast(self.device, enabled=amp)
+            @torch.autocast(self.device.type, enabled=amp)
             @torch.set_grad_enabled(grad)
             @wraps(func)
-            def real(batch):
-                getattr(self.model, mode)()
-                if isinstance(batch, tuple):
+            def _process_func(_, batch):
+                if self.model is not None:
+                    getattr(self.model, mode)()
+                if isinstance(batch, (tuple, list)):
                     batch = tuple(
                         [
                             x.to(self.device) if isinstance(x, torch.Tensor) else x
@@ -75,12 +84,17 @@ class Trainer:
                         f"the type of batch yield is not supported {type(batch)}"
                     )
 
-            return real
+            if mode == "train":
+                self.train_func = _process_func
+                self.train_engine._process_function = _process_func
+            elif mode == "eval":
+                self.val_func = _process_func
+                self.val_engine._process_function = _process_func
 
         return decorator
 
-    train = functools.partial(forward, mode="train")
-    eval = functools.partial(forward, mode="eval")
+    train = functools.partialmethod(forward, mode="train")
+    eval = functools.partialmethod(forward, mode="eval")
 
     def use(self, plugin: BasePlugin, at: "str" = None):
         if at is not None:

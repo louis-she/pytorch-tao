@@ -1,6 +1,7 @@
 import os
 import shutil
 import tempfile
+import torchvision
 from pathlib import Path
 
 import jinja2
@@ -92,6 +93,26 @@ def trainer():
         train_loader=range(100),
         val_func=lambda e, b: 1,
         val_loader=range(100),
+    )
+
+
+@pytest.fixture(scope="function")
+def fake_mnist_trainer():
+    dataset = torchvision.datasets.FakeData(
+        size=100,
+        image_size=(1, 28, 28),
+        transform=torchvision.transforms.ToTensor()
+    )
+    train_set = torch.utils.data.Subset(dataset, range(0, 80))
+    val_set = torch.utils.data.Subset(dataset, range(80, 100))
+
+    train_loader = torch.utils.data.DataLoader(train_set, batch_size=4)
+    val_loader = torch.utils.data.DataLoader(val_set, batch_size=4)
+
+    return tao.Trainer(
+        train_loader=train_loader,
+        val_loader=val_loader,
+        model=SimpleNet(),
     )
 
 
