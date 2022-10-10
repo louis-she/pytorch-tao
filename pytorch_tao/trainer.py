@@ -1,6 +1,6 @@
 import functools
 from functools import wraps
-from typing import Callable, Iterable, Iterator
+from typing import Callable, Iterable
 
 import torch
 
@@ -36,7 +36,7 @@ class Trainer:
     def _do_eval(self):
         self.val_engine.run(self.val_loader)
 
-    def forward(self, mode: str, amp=False, fields=None, grad: bool=True):
+    def forward(self, mode: str, amp=False, fields=None, grad: bool = True):
         if mode not in ["train", "eval"]:
             raise ValueError("mode should be train or eval")
 
@@ -97,7 +97,5 @@ class Trainer:
         else:
             raise ValueError("base plugin should maunally attach to engine")
 
-    def fit(
-        self, *, max_epochs: int
-    ):
+    def fit(self, *, max_epochs: int):
         self.train_engine.run(self.train_loader, max_epochs=max_epochs)
