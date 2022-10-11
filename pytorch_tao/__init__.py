@@ -1,5 +1,6 @@
 __version__ = "0.1.5"
 
+import logging
 import os
 from typing import Any
 
@@ -12,6 +13,8 @@ from pytorch_tao.repo import DirtyRepoError, Repo
 from pytorch_tao.trackers import set_tracker, Tracker
 from pytorch_tao.trainer import Trainer
 from pytorch_tao.tune import tell
+
+logging.captureWarnings(True)
 
 
 args: _ArgSet = None

@@ -2,25 +2,29 @@
 class default:
     name = "{{ name }}"
 
-    # tao run path
+    # tao run and log path
     run_dir = "{{ run_dir }}"
+    log_dir = "{{ log_dir }}"
 
     # It's highly recommended to add the path related options
     # and use them in your code
-    dataset_root = None
-    log_dir = None
+    #
+    # dataset_root = ...
 
     # If you want to enable functions related with Kaggle
+    #
     # (e.g. repo.sync_code_to_kaggle), config the following block.
-    kaggle_username = None
-    kaggle_key = None
-    kaggle_code_dataset_id = None
+    # kaggle_username = None
+    # kaggle_key = None
+    # kaggle_code_dataset_id = None
 
-    wandb_secret = None
+    # recorder settings
+    #
+    # wandb_secret = None
 
     # tune options
-    study_storage = None
-    tune_direction = None
+    # study_storage = None
+    # tune_direction = None
 
 
 # add any other environments as you want, set TAO_ENV to switch

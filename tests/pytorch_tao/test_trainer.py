@@ -44,6 +44,8 @@ def test_trainer_train_decorator(fake_mnist_trainer: tao.Trainer):
         assert labels.shape == torch.Size((4,))
         assert images.device.type == "cpu"
         assert labels.device.type == "cpu"
+        assert next(fake_mnist_trainer.model.parameters()).device.type == "cpu"
+        return torch.tensor(1.0, requires_grad=True)
 
     fake_mnist_trainer.fit(max_epochs=1)
 
@@ -51,12 +53,14 @@ def test_trainer_train_decorator(fake_mnist_trainer: tao.Trainer):
 @pytest.mark.skipif(not torch.cuda.is_available(), reason="cuda only")
 def test_trainer_train_decorator_cuda_device(fake_mnist_trainer: tao.Trainer):
 
-    fake_mnist_trainer.device = torch.device("cuda")
+    fake_mnist_trainer.to("cuda")
 
     @fake_mnist_trainer.train()
     def _(images, labels):
         assert images.device.type == "cuda"
         assert labels.device.type == "cuda"
+        assert next(fake_mnist_trainer.model.parameters()).device.type == "cuda"
+        return torch.tensor(1.0, requires_grad=True)
 
     fake_mnist_trainer.fit(max_epochs=1)
 
@@ -66,6 +70,7 @@ def test_trainer_train_decorator_custom_fields(fake_mnist_trainer: tao.Trainer):
     def _(images, *args):
         assert images.shape == torch.Size((4, 1, 28, 28))
         assert len(args) == 0
+        return torch.tensor(1.0, requires_grad=True)
 
     fake_mnist_trainer.fit(max_epochs=1)
 
@@ -75,8 +80,8 @@ def test_trainer_train_decorator_no_grad(fake_mnist_trainer: tao.Trainer):
     def _(images, labels):
         logits = fake_mnist_trainer.model(images)
         loss = torch.nn.functional.cross_entropy(logits, labels)
-        loss.backward()
         fake_mnist_trainer.train_engine.should_terminate = True
+        return loss
 
     with pytest.raises(
         RuntimeError,
@@ -85,12 +90,12 @@ def test_trainer_train_decorator_no_grad(fake_mnist_trainer: tao.Trainer):
         fake_mnist_trainer.fit(max_epochs=1)
 
 
-def test_trainer_train_decorator_grad(fake_mnist_trainer: tao.Trainer):
+def test_trainer_train_decorator_grad(
+    fake_mnist_trainer: tao.Trainer, tracker: tao.Tracker
+):
     @fake_mnist_trainer.train(grad=True)
     def _(images, labels):
         logits = fake_mnist_trainer.model(images)
-        loss = torch.nn.functional.cross_entropy(logits, labels)
-        loss.backward()
-        fake_mnist_trainer.train_engine.should_terminate = True
+        return torch.nn.functional.cross_entropy(logits, labels)
 
     fake_mnist_trainer.fit(max_epochs=1)

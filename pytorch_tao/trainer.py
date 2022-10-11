@@ -1,11 +1,11 @@
-import functools
-import logging
 from functools import wraps
-from typing import Callable, Iterable
+from typing import Any, Callable, Iterable, List
 
 import torch
 
 from ignite.engine import Engine, Events
+
+from pytorch_tao import helper
 
 from pytorch_tao.plugins.base import BasePlugin, TrainPlugin, ValPlugin
 
@@ -17,6 +17,7 @@ class Trainer:
         self,
         device: torch.device = torch.device("cpu"),
         model: torch.nn.Module = None,
+        optimizer: torch.optim.Optimizer = None,
         train_loader: Iterable = None,
         val_loader: Iterable = None,
         train_func: Callable = lambda e, b: None,
@@ -27,6 +28,9 @@ class Trainer:
             device = torch.device(device)
         self.device = device
         self.model = model
+        if self.model is not None:
+            self.model.to(self.device)
+        self.optimizer = optimizer
         self.train_loader = train_loader
         self.val_loader = val_loader
         self.train_func = train_func
@@ -37,66 +41,102 @@ class Trainer:
             Events.EPOCH_COMPLETED(every=val_stride), self._do_eval
         )
 
+    def to(self, device: torch.device):
+        if isinstance(device, str):
+            device = torch.device(device)
+        self.device = device
+        if self.model:
+            self.model.to(self.device)
+
     def _do_eval(self):
         self.val_engine.run(self.val_loader)
 
-    def forward(  # noqa: C901
-        self, mode: str, fields=None, amp=False, grad: bool = True
+    def train(  # noqa: C901
+        self,
+        optimizer: torch.optim.Optimizer = None,
+        fields: List[str] = None,
+        amp: bool = False,
+        grad: bool = True,
+        accumulate: int = 1,
+        scaler: torch.cuda.amp.GradScaler = None,
     ):
-        if mode not in ["train", "eval"]:
-            raise ValueError("mode should be train or eval")
-        if mode == "train" and self.train_func is not None:
-            logging.warning("train decorator will override train_func")
-        if mode == "eval" and self.val_func is not None:
-            logging.warning("eval decorator will override val_func")
+        if amp and self.device.type == "cuda":
+            scaler = scaler if scaler is not None else torch.cuda.amp.GradScaler()
+        optimizer = optimizer if optimizer is not None else self.optimizer
 
         def decorator(func: Callable):
             @torch.autocast(self.device.type, enabled=amp)
             @torch.set_grad_enabled(grad)
             @wraps(func)
-            def _process_func(_, batch):
+            def _func(engine: Engine, batch):
                 if self.model is not None:
-                    getattr(self.model, mode)()
-                if isinstance(batch, (tuple, list)):
-                    batch = tuple(
-                        [
-                            x.to(self.device) if isinstance(x, torch.Tensor) else x
-                            for x in batch
-                        ]
-                    )
-                    if fields is None:
-                        return func(*batch)
-                    return func(*[batch[f] for f in fields])
-                elif isinstance(batch, dict):
-                    batch = tuple(
-                        [
-                            x.to(self.device) if isinstance(x, torch.Tensor) else x
-                            for x in batch
-                        ]
-                    )
-                    batch = {
-                        x: y.to(self.device) if isinstance(y, torch.Tensor) else y
-                        for x, y in batch.items()
-                    }
-                    if fields is None:
-                        return func(**batch)
-                    return func(**[batch[f] for f in fields])
+                    self.model.train()
+                if (engine.state.iteration - 1) % accumulate == 0:
+                    optimizer.zero_grad()
+                results = self._process_func(fields, batch, func)
+                if helper.is_scalar(results):
+                    loss = results
+                elif isinstance(results, (list, tuple)):
+                    loss = results[0]
+                elif isinstance(results, dict):
+                    loss = results["loss"]
+                if scaler is not None:
+                    scaler.scale(loss).backward()
+                    if engine.state.iteration % accumulate == 0:
+                        scaler.step(optimizer)
+                        scaler.update()
                 else:
-                    raise ValueError(
-                        f"the type of batch yield is not supported {type(batch)}"
-                    )
+                    loss.backward()
+                    if engine.state.iteration % accumulate == 0:
+                        optimizer.step()
+                return results
 
-            if mode == "train":
-                self.train_func = _process_func
-                self.train_engine._process_function = _process_func
-            elif mode == "eval":
-                self.val_func = _process_func
-                self.val_engine._process_function = _process_func
+            self.train_func = _func
+            self.train_engine._process_function = _func
 
         return decorator
 
-    train = functools.partialmethod(forward, mode="train")
-    eval = functools.partialmethod(forward, mode="eval")
+    def eval(
+        self,
+        fields: List[str] = None,
+        amp: bool = False,
+    ):
+        def decorator(func: Callable):
+            @torch.autocast(self.device.type, enabled=amp)
+            @wraps(func)
+            def _func(engine: Engine, batch):
+                if self.model is not None:
+                    self.model.eval()
+                results = self._process_func(fields, batch, func)
+                return results
+
+            self.val_func = _func
+            self.val_engine._process_function = _func
+
+        return decorator
+
+    def _process_func(self, fields: List[str], batch: Any, func: Callable):
+        if isinstance(batch, (tuple, list)):
+            batch = tuple(
+                [x.to(self.device) if isinstance(x, torch.Tensor) else x for x in batch]
+            )
+            if fields is None:
+                return func(*batch)
+            return func(*[batch[f] for f in fields])
+
+        elif isinstance(batch, dict):
+            batch = tuple(
+                [x.to(self.device) if isinstance(x, torch.Tensor) else x for x in batch]
+            )
+            batch = {
+                x: y.to(self.device) if isinstance(y, torch.Tensor) else y
+                for x, y in batch.items()
+            }
+            if fields is None:
+                return func(**batch)
+            return func(**[batch[f] for f in fields])
+        else:
+            raise ValueError(f"the type of batch yield is not supported {type(batch)}")
 
     def use(self, plugin: BasePlugin, at: "str" = None):
         if at is not None:

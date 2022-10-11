@@ -45,7 +45,11 @@ def ensure_config(*keys):
     def decorator(func):
         @wraps(func)
         def real(*args, **kwargs):
-            missing_keys = [key for key in keys if not hasattr(tao.cfg, key)]
+            missing_keys = [
+                key
+                for key in keys
+                if not hasattr(tao.cfg, key) or getattr(tao.cfg, key) is None
+            ]
             if len(missing_keys) != 0:
                 raise ConfigMissingError(missing_keys, func)
             return func(*args, **kwargs)
@@ -101,6 +105,13 @@ def parse_tao_args(args: str = None):
 
     new_parser.add_argument("path", type=str, help="Path of this new project")
 
+    init_parser = subparsers.add_parser(
+        "init",
+        help="Init a tao project",
+    )
+
+    init_parser.add_argument("path", type=str, help="Path of the existing project")
+
     tune_parser = subparsers.add_parser(
         "tune",
         parents=[get_args_parser()],
@@ -134,6 +145,11 @@ def new():
     tao.Repo.create(tao.args.path)
 
 
+def init():
+    repo = tao.Repo(tao.args.path)
+    repo.init()
+
+
 def tune():
     tao.repo = tao.Repo.find_by_file(tao.args.training_script)
     tao.load_cfg(tao.repo.cfg_path)
@@ -143,6 +159,7 @@ def tune():
 _cmd = {
     "run": run,
     "new": new,
+    "init": init,
     "tune": tune,
 }
 

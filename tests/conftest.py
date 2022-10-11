@@ -2,8 +2,10 @@ import os
 import shutil
 import tempfile
 from pathlib import Path
+from typing import Dict
 
 import jinja2
+import numpy as np
 import pytest
 import pytorch_tao as tao
 import torch
@@ -12,6 +14,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torchvision
 from ignite.metrics import Metric as IMetric
+from torch.optim import SGD
 
 
 class SimpleNet(nn.Module):
@@ -107,11 +110,15 @@ def fake_mnist_trainer():
     train_loader = torch.utils.data.DataLoader(train_set, batch_size=4)
     val_loader = torch.utils.data.DataLoader(val_set, batch_size=4)
 
-    return tao.Trainer(
+    model = SimpleNet()
+    trainer = tao.Trainer(
         train_loader=train_loader,
         val_loader=val_loader,
-        model=SimpleNet(),
+        model=model,
+        optimizer=SGD(model.parameters(), lr=0.01),
     )
+
+    return trainer
 
 
 @pytest.fixture(scope="function")
@@ -192,3 +199,28 @@ def test_repo_for_tune(render_tpl):
     repo.commit_all("add all")
     yield repo
     shutil.rmtree(temp_dir)
+
+
+@pytest.fixture(scope="function")
+def tracker():
+
+    _previous_tracker = tao.tracker
+
+    class _Tracker(tao.Tracker):
+        def __init__(self):
+            super().__init__()
+            self.points = []
+            self.images = []
+
+        def add_points(self, points: Dict):
+            super().add_points(points)
+            self.points.append(points)
+
+        def add_image(self, image: np.ndarray):
+            super().add_image(image)
+            self.images.append(image)
+
+    tao.tracker = _Tracker()
+    yield tao.tracker
+
+    tao.tracker = _previous_tracker

@@ -1,3 +1,6 @@
+import warnings
+from typing import Callable
+
 from ignite.engine import CallableEventWithFilter, Engine, EventsList
 
 
@@ -15,13 +18,24 @@ class BasePlugin:
         self.set_engine(engine)
         for key in dir(self):
             func = getattr(self, key)
-            tao_event = getattr(func, "_tao_event", None)
-            if not (
-                isinstance(tao_event, EventsList)
-                or isinstance(tao_event, CallableEventWithFilter)
-            ):
+            tao_event_handler = getattr(func, "_tao_event", None)
+            if tao_event_handler is None:
                 continue
-            engine.add_event_handler(tao_event, func)
+            if not self._is_event_handler(tao_event_handler):
+                try:
+                    tao_event_handler = tao_event_handler(self)
+                except TypeError:
+                    warnings.warn("event handler lambda should return valid event type")
+                    continue
+                if not self._is_event_handler(tao_event_handler):
+                    warnings.warn("event handler lambda should return valid event type")
+                    continue
+            engine.add_event_handler(tao_event_handler, func)
+
+    def _is_event_handler(self, event_handler: Callable):
+        return isinstance(event_handler, EventsList) or isinstance(
+            event_handler, CallableEventWithFilter
+        )
 
 
 class TrainPlugin(BasePlugin):

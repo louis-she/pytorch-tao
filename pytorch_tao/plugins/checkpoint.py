@@ -2,7 +2,7 @@ from pathlib import Path
 from typing import Dict
 
 from ignite.engine import Events
-from ignite.handlers import Checkpoint as ICheckpoint
+from ignite.handlers import Checkpoint as ICheckpoint, DiskSaver
 
 import pytorch_tao as tao
 from pytorch_tao.plugins.base import ValPlugin
@@ -16,7 +16,9 @@ class Checkpoint(ValPlugin):
         self.save_path = Path(tao.cfg.log_dir).as_posix()
         self._checkpoint = ICheckpoint(
             self.objects,
-            self.save_path,
+            DiskSaver(
+                self.save_path, create_dir=True, save_on_rank=0, require_empty=False
+            ),
             score_function=ICheckpoint.get_default_score_fn(metric_name, score_sign),
             n_saved=n_saved,
         )

@@ -21,6 +21,6 @@ class OutputRecorder(BasePlugin):
                     f"{field} is not in engines output keys {engine.state.output.keys()} "
                 )
             if helper.is_scalar(engine.state.output[field]):
-                tao.tracker.add_points({[field]: engine.state.output[field]})
+                tao.tracker.add_points({field: helper.item(engine.state.output[field])})
                 continue
             # TODO: add image recorder

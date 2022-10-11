@@ -13,4 +13,4 @@ class Scheduler(base.TrainPlugin):
     @tao.on(Events.ITERATION_COMPLETED)
     def _step(self):
         self._scheduler.step()
-        tao.tracker.add_points({"lr": self._scheduler.get_lr()[0]})
+        tao.tracker.add_points({"lr": self._scheduler.get_last_lr()[0]})

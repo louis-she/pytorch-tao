@@ -44,6 +44,7 @@ class Repo:
             "cfg.py",
             name=self.name,
             run_dir=(self.tao_path / "runs").resolve().as_posix(),
+            log_dir=(self.path / "log").resolve().as_posix(),
         )
         self.cfg_path.write_text(config_content)
         gitignore_content = core.render_tpl(".gitignore")
