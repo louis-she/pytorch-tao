@@ -43,7 +43,7 @@ class ProgressBar(BasePlugin):
         if psutil is not None:
             self.hardware_record["cpu_util"] = psutil.cpu_percent()
             self.hardware_record["memory"] = psutil.virtual_memory()
-        if pynvml is not None:
+        if pynvml is not None and torch.cuda.is_available():
             self.hardware_record["gpu_util"] = torch.cuda.utilization()
             self.hardware_record["gpu_memory"] = torch.cuda.mem_get_info()
         self.last_update_time = now
@@ -57,7 +57,7 @@ class ProgressBar(BasePlugin):
         if psutil is not None:
             tpl += "%5s   %12s   "
             var += ["cpu", "memory"]
-        if pynvml is not None:
+        if pynvml is not None and torch.cuda.is_available():
             tpl += "%5s   %12s   "
             var += ["gpu", "gpu_memory"]
         tpl += "%8s" * len(self.fields)
@@ -98,7 +98,7 @@ class ProgressBar(BasePlugin):
                 if memory is not None
                 else "N/A",
             ]
-        if pynvml is not None:
+        if pynvml is not None and torch.cuda.is_available():
             gpu_util = self.hardware_record.get("gpu_util", None)
             gpu_memory = self.hardware_record.get("gpu_memory", None)
             tpl += "%5s   %12s   "
