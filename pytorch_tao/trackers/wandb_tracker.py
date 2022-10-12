@@ -2,17 +2,17 @@ import os
 from typing import Dict, List
 
 import numpy as np
+from ignite.engine import Events
 
 import pytorch_tao as tao
-from ignite.engine import Events
 
 try:
     import wandb
 except ModuleNotFoundError:
     wandb = None
 
-from pytorch_tao.trackers.base import Tracker
 from pytorch_tao.plugins import TrainPlugin
+from pytorch_tao.trackers.base import Tracker
 
 
 class WandbTracker(Tracker, TrainPlugin):
@@ -27,7 +27,7 @@ class WandbTracker(Tracker, TrainPlugin):
             dir=tao.cfg.log_dir,
             project=tao.cfg.wandb_project,
             name=name,
-            group=os.environ.get("TAO_TUNE")
+            group=os.environ.get("TAO_TUNE"),
         )
 
     def add_image(self, image_name: str, images: List[np.ndarray]):

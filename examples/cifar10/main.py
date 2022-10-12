@@ -1,8 +1,6 @@
-from importlib.metadata import distribution
 import os
 
 import pytorch_tao as tao
-from pytorch_tao.trackers import WandbTracker
 import torch
 import torch.nn.functional as F
 from ignite.metrics import Accuracy
@@ -14,6 +12,7 @@ from pytorch_tao.plugins import (
     ProgressBar,
     Scheduler,
 )
+from pytorch_tao.trackers import WandbTracker
 from torch.optim.lr_scheduler import OneCycleLR
 from torch.utils.data import DataLoader
 from torchvision import datasets, transforms
