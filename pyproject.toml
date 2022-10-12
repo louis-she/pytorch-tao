@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "pytorch-tao"
-version = "0.1.5"
+version = "0.1.6"
 description = "Tao for PyTorch"
 authors = ["chenglu <chenglu.she@gmail.com>"]
 license = "MIT"
