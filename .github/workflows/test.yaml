@@ -23,7 +23,7 @@ jobs:
         cache-dependency-path: 'requirements/dev.txt'
     - name: Install dependencies
       run: |
-        pip install .
+        pip install -e .
         pip install -r requirements/dev.txt
     - name: Lint with flake8
       run: |
