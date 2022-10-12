@@ -3,13 +3,29 @@ from ignite.engine import Engine
 from ignite.metrics import Metric as IMetric
 
 from pytorch_tao.plugins.base import ValPlugin
+import pytorch_tao as tao
+from ignite.engine import Events
 
 
 class Metric(ValPlugin):
-    def __init__(self, name: str, metric: IMetric):
+    def __init__(self, name: str, metric: IMetric, tune=False):
         self._metric = metric
         self.name = name
+        self.tune = tune
 
     def attach(self, engine: Engine):
-        super().attach(engine)
         self._metric.attach(engine, self.name)
+        super().attach(engine)
+
+    @tao.on(Events.EPOCH_COMPLETED)
+    def _track(self, engine: Engine):
+        tao.tracker.add_points({
+            self.name: engine.state.metrics[self.name]
+        })
+        if self.tune and tao.trial is not None:
+            tao.trial.report(engine.state.metrics[self.name], engine.state.epoch)
+
+    @tao.on(Events.COMPLETED)
+    def _tell(self, engine: Engine):
+        if self.tune and tao.study is not None:
+            tao.tell(engine.state.metrics[self.name])

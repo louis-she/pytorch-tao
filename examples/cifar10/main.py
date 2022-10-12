@@ -1,9 +1,12 @@
+from importlib.metadata import distribution
 import os
 
 import pytorch_tao as tao
+from pytorch_tao.trackers import WandbTracker
 import torch
 import torch.nn.functional as F
 from ignite.metrics import Accuracy
+from optuna.distributions import CategoricalDistribution, FloatDistribution
 from pytorch_tao.plugins import (
     Checkpoint,
     Metric,
@@ -15,24 +18,46 @@ from torch.optim.lr_scheduler import OneCycleLR
 from torch.utils.data import DataLoader
 from torchvision import datasets, transforms
 
+
+class _args:
+    name: str
+    max_epochs: int = tao.arg(default=10)
+    batch_size: int = tao.arg(
+        default=128, tune=CategoricalDistribution([32, 64, 128, 256])
+    )
+    lr: float = tao.arg(default=128, tune=FloatDistribution(low=3e-4, high=3e-2))
+
+
+tao.arguments(_args)
+
+tracker = WandbTracker("test")
+tao.set_tracker(tracker)
+
 device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
 model = torch.hub.load("pytorch/vision:v0.10.0", "mobilenet_v2", pretrained=True)
 model.classifier[1] = torch.nn.Linear(1280, 10)
-optimizer = torch.optim.Adam(model.parameters(), lr=3e-3)
+optimizer = torch.optim.Adam(model.parameters(), lr=tao.args.lr)
 
-train_data = datasets.CIFAR10(
-    f"{os.getenv('HOME')}/datasets", train=True, transform=transforms.ToTensor()
+train_loader = DataLoader(
+    datasets.CIFAR10(
+        f"{os.getenv('HOME')}/datasets", train=True, transform=transforms.ToTensor()
+    ),
+    batch_size=tao.args.batch_size,
+    shuffle=True,
 )
-val_data = datasets.CIFAR10(
-    f"{os.getenv('HOME')}/datasets", train=False, transform=transforms.ToTensor()
+val_loader = DataLoader(
+    datasets.CIFAR10(
+        f"{os.getenv('HOME')}/datasets", train=False, transform=transforms.ToTensor()
+    ),
+    batch_size=tao.args.batch_size,
 )
 
 trainer = tao.Trainer(
     device="cuda",
     model=model,
     optimizer=optimizer,
-    train_loader=DataLoader(train_data, batch_size=128),
-    val_loader=DataLoader(val_data, batch_size=128),
+    train_loader=train_loader,
+    val_loader=val_loader,
 )
 
 
@@ -49,10 +74,21 @@ def val_batch(images, targets):
     return {"y_pred": logits, "y": targets}
 
 
-trainer.use(Scheduler(OneCycleLR(optimizer, 0.1, total_steps=10000)))
+trainer.use(
+    Scheduler(
+        OneCycleLR(
+            optimizer,
+            0.05,
+            epochs=tao.args.max_epochs,
+            steps_per_epoch=len(train_loader),
+        )
+    )
+)
+
+trainer.use(tracker)
 trainer.use(Metric("accuracy", Accuracy()))
 trainer.use(Checkpoint("accuracy", {"model": model}))
 trainer.use(OutputRecorder("loss"), at="train")
 trainer.use(ProgressBar("loss"), at="train")
 
-trainer.fit(max_epochs=10)
+trainer.fit(max_epochs=tao.args.max_epochs)

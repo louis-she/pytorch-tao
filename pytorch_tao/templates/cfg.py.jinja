@@ -1,7 +1,5 @@
 # default environment configs
 class default:
-    name = "{{ name }}"
-
     # tao run and log path
     run_dir = "{{ run_dir }}"
     log_dir = "{{ log_dir }}"
@@ -14,22 +12,25 @@ class default:
     # If you want to enable functions related with Kaggle
     #
     # (e.g. repo.sync_code_to_kaggle), config the following block.
-    # kaggle_username = None
-    # kaggle_key = None
-    # kaggle_code_dataset_id = None
+    # kaggle_username = ...
+    # kaggle_key = ...
+    # kaggle_code_dataset_id = ...
 
-    # recorder settings
+    # tracker settings
     #
-    # wandb_secret = None
+    # wandb_project = ...
+    # wandb_api_key = ...  # visit https://wandb.ai/authorize to get the key
+                           # can skip this and use `wandb login` instead
 
     # tune options
-    # study_storage = None
-    # tune_direction = None
+    # study_storage = "sqlite:////home/featurize/tune.db"
+    # tune_direction = "maximize"
 
 
 # add any other environments as you want, set TAO_ENV to switch
 # between environments.
 class colab(default):
+    """config for colab environment"""
 
-  # override default `dataset_root` option
-  dataset_root = None
+    # override default `dataset_root` option
+    # dataset_root = None
