@@ -9,3 +9,4 @@ ipdb~=0.13.9
 pytest-cov~=3.0.0
 psutil~=5.9.2
 pynvml~=11.4.1
+torchvision
