@@ -1,0 +1,6 @@
+torch~=1.10
+GitPython~=3.1.27
+Jinja2~=3.1.2
+kaggle~=1.5.12
+optuna~=3.0.2
+pytorch-ignite~=0.4.10

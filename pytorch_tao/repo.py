@@ -47,7 +47,7 @@ class Repo:
             log_dir=(self.path / "log").resolve().as_posix(),
         )
         self.cfg_path.write_text(config_content)
-        gitignore_content = core.render_tpl(".gitignore")
+        gitignore_content = core.render_tpl("gitignore")
         (self.path / ".gitignore").write_text(gitignore_content)
 
         self.git = git.Repo.init(self.path)

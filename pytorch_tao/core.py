@@ -39,6 +39,35 @@ class ConfigMissingError(Exception):
         )
 
 
+class ArgMissingError(Exception):
+    def __init__(self, keys: List[str], func: Callable):
+        self.missing_keys = set(keys)
+        self.func = func
+        super().__init__(
+            f"Arg {self.missing_keys} must be present for calling {func.__name__}"
+        )
+
+
+def ensure_arg(*keys):
+    """A decorator to ensure that some config keys must be present for a function"""
+
+    def decorator(func):
+        @wraps(func)
+        def real(*args, **kwargs):
+            missing_keys = [
+                key
+                for key in keys
+                if not hasattr(tao.args, key) or getattr(tao.args, key) is None
+            ]
+            if len(missing_keys) != 0:
+                raise ArgMissingError(missing_keys, func)
+            return func(*args, **kwargs)
+
+        return real
+
+    return decorator
+
+
 def ensure_config(*keys):
     """A decorator to ensure that some config keys must be present for a function"""
 

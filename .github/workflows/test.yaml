@@ -12,23 +12,22 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: ["3.7"]
+        python-version: ["3.8"]
     steps:
     - uses: actions/checkout@v3
-    - name: Install poetry
-      run: pipx install poetry
     - name: Set up Python ${{ matrix.python-version }}
       uses: actions/setup-python@v4
       with:
         python-version: ${{ matrix.python-version }}
-        cache: 'poetry'
+        cache: 'pip'
     - name: Install dependencies
-      run: poetry config --local repositories.tsinghua https://pypi.org/simple/ && poetry install
+      run:
+        - pip install -r requirements/dev.txt
     - name: Lint with flake8
       run: |
-        poetry run flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
-        poetry run flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
+        flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+        flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
     - name: Test with black
-      run: poetry run black --check -v .
+      run: black --check -v .
     - name: Test with pytest
-      run: poetry run pytest
+      run: pytest

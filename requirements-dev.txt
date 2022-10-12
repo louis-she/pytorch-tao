@@ -1,0 +1,9 @@
+click~=8.1.3
+pytest~=7.1.3
+black~=22.8.0
+flake8~=5.0.4
+usort~=1.0.5
+ipdb~=0.13.9
+pytest-cov~=3.0.0
+psutil~=5.9.2
+pynvml~=11.4.1
