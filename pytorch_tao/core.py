@@ -139,7 +139,7 @@ def parse_tao_args(args: str = None):
         help="Init a tao project",
     )
 
-    init_parser.add_argument("path", type=str, help="Path of the existing project")
+    init_parser.add_argument("path", type=str, default=".", nargs="?", help="Path of the existing project")
 
     tune_parser = subparsers.add_parser(
         "tune",

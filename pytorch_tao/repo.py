@@ -5,7 +5,8 @@ from copy import copy
 from datetime import datetime
 from pathlib import Path
 from tempfile import mkdtemp
-from typing import Union
+from typing import Dict, Tuple, Union
+import warnings
 
 import git
 import optuna
@@ -32,17 +33,18 @@ class Repo:
             try:
                 self.git = git.Repo(self.path)
             except git.InvalidGitRepositoryError:
-                logging.warning("failed to initialze git, is .git dir in tao repo?")
+                warnings.warn("failed to initialze git, is .git dir in tao repo?")
             try:
                 self.load_cfg()
             except FileNotFoundError:
-                logging.warning("failed to load config in tao repo")
+                warnings.warn("failed to load config in tao repo")
 
     def init(self):
         self.tao_path.mkdir(exist_ok=False)
         config_content = core.render_tpl(
             "cfg.py",
             name=self.name,
+            path=self.path.resolve().as_posix(),
             run_dir=(self.tao_path / "runs").resolve().as_posix(),
             log_dir=(self.path / "log").resolve().as_posix(),
         )
@@ -66,6 +68,31 @@ class Repo:
         """Is this tao repo exists and valid"""
         return self.path.exists() and self.tao_path.exists() and self.git_path.exists()
 
+    def torchrun(self, wd: Path, env: Dict[str, str], exclude_args: Tuple[str]):
+        try:
+            prev_cwd = os.getcwd()
+            os.chdir(wd)
+
+            main_process_env = dict(os.environ)
+            os.environ.update(env)
+            for key, item in env.items():
+                os.environ[key] = item
+            args = copy(tao.args)
+            for arg in exclude_args:
+                delattr(args, arg)
+            run(args)
+        finally:
+            os.chdir(prev_cwd)
+            os.environ.clear()
+            os.environ.update(main_process_env)
+
+    def prepare_wd(self):
+        hexsha = self.git.head.ref.commit.hexsha[:8]
+        wd = tao.cfg.run_dir / hexsha
+        if not wd.exists():
+            git.Repo.clone_from(self.path.as_posix(), wd.as_posix())
+        return wd
+
     @tao.ensure_config("run_dir", "study_storage")
     def tune(self):
         """Start hyperparameter tunning process"""
@@ -73,19 +100,22 @@ class Repo:
             raise DirtyRepoError()
         if tao.cfg.study_storage is None:
             raise ValueError("In memory study is not supported in tao")
-        tao.args.tao_commit = False
-        tao.args.tao_dirty = False
         tao.study = optuna.create_study(
             study_name=tao.args.tao_tune_name,
             storage=tao.cfg.study_storage,
             load_if_exists=tao.args.tao_tune_duplicated,
             direction=tao.cfg.tune_direction,
         )
-        os.environ["TAO_TUNE"] = tao.args.tao_tune_name
-        for i in range(tao.args.tao_tune_max_trials):
-            logging.info(f"tune {tao.args.tao_tune_name} the {i+1} time")
-            self.run()
-            logging.info(f"tune {tao.args.tao_tune_name} {i+1} has finished")
+        wd = self.prepare_wd()
+        for _ in range(tao.args.tao_tune_max_trials):
+            env = {
+                "TAO_COMMIT": self.git.head.ref.commit.hexsha,
+                "TAO_TUNE": tao.args.tao_tune_name,
+                "TAO_RUN_AT": datetime.now().strftime("%m/%d/%Y, %H:%M:%S"),
+                "TAO_REPO": wd.as_posix(),
+                "PYTHONPATH": f'{wd.as_posix()}:{os.getenv("PYTHONPATH", "")}'
+            }
+            self.torchrun(wd, env, ("tao_tune_name", "tao_tune_duplicated"))
 
     @tao.ensure_config("run_dir")
     def run(self):
@@ -99,39 +129,16 @@ class Repo:
             self.git.index.commit(tao.args.tao_commit)
         if not tao.args.tao_dirty and self.git.is_dirty(untracked_files=True):
             raise DirtyRepoError()
-        run_dir = Path(tao.cfg.run_dir)
-        run_dir = run_dir if run_dir.is_absolute() else self.path / run_dir
-        metadata = {
-            "dirty": self.git.is_dirty(untracked_files=True),
-            "commit": self.git.head.ref.commit.hexsha,
-            "run_at": datetime.now().strftime("%m/%d/%Y, %H:%M:%S"),
+        wd = self.path if tao.args.tao_dirty else self.prepare_wd()
+        env = {
+            "TAO_COMMIT": self.git.head.ref.commit.hexsha,
+            "TAO_RUN_AT": datetime.now().strftime("%m/%d/%Y, %H:%M:%S"),
+            "TAO_REPO": wd.as_posix(),
+            "PYTHONPATH": f'{wd.as_posix()}:{os.getenv("PYTHONPATH", "")}'
         }
-        if tao.args.tao_dirty:
-            # run process in current pwd
-            run_fold = self.path
-        else:
-            # run process in run dir
-            hexsha = self.git.head.ref.commit.hexsha[:8]
-            run_fold = run_dir / hexsha
-            if not run_fold.exists():
-                git.Repo.clone_from(self.path.as_posix(), run_fold.as_posix())
-        args = copy(tao.args)
-        del args.tao_dirty
-        del args.tao_cmd
-        del args.tao_commit
-        for key, val in metadata.items():
-            if isinstance(val, bool):
-                args.training_script_args += [f"--{key}"] if val else []
-                continue
-            args.training_script_args += [f"--{key}", val]
-        prev_cwd = os.getcwd()
-        os.chdir(run_fold)
-        os.environ[
-            "PYTHONPATH"
-        ] = f'{run_fold.as_posix()}:{os.getenv("PYTHONPATH", "")}'
-        os.environ["TAO_REPO"] = run_fold.as_posix()
-        run(args)
-        os.chdir(prev_cwd)
+        if self.git.is_dirty(untracked_files=True):
+            env["TAO_DIRTY"] = "1"
+        self.torchrun(wd, env, ("tao_dirty", "tao_cmd", "tao_commit"))
 
     @classmethod
     def create(cls, path: Union[Path, str]):

@@ -78,9 +78,6 @@ def arguments(cls: Type):  # noqa: C901
     """
     argset = _ArgSet()
     parser = argparse.ArgumentParser(description="PyTorch Tao")
-    parser.add_argument("--dirty", action="store_true")
-    parser.add_argument("--commit", type=str)
-    parser.add_argument("--run_at", type=str)
 
     for key, type in cls.__annotations__.items():
         if type not in [int, float, str, bool, List[int], List[float], List[str]]:

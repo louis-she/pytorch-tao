@@ -1,8 +1,8 @@
 # default environment configs
 class default:
     # tao run and log path
-    run_dir = "{{ run_dir }}"
-    log_dir = "{{ log_dir }}"
+    run_dir = Path("{{ run_dir }}")
+    log_dir = Path("{{ log_dir }}")
 
     # It's highly recommended to add the path related options
     # and use them in your code
@@ -23,7 +23,7 @@ class default:
                            # can skip this and use `wandb login` instead
 
     # tune options
-    # study_storage = "sqlite:////home/featurize/tune.db"
+    # study_storage = "sqlite:////{{ path }}/tune.db"
     # tune_direction = "maximize"
 
 

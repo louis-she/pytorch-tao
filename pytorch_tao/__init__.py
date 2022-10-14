@@ -2,6 +2,7 @@ __version__ = "0.1.7"
 
 import logging
 import os
+from pathlib import Path
 from typing import Any
 
 from optuna import load_study, Study, Trial
