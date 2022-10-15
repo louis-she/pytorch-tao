@@ -14,11 +14,13 @@ All the log will be saved in the `./log` folder.
 
 1. Search `Uncomment to use wandb` in the `main.py`, and just uncomment them, there should be 4 lines of them.
 2. open `.tao/cfg.py` with any editor, configure the `wandb_project` and `wandb_api_key`, note that the config file is also a Python script.
-3. `tao run main.py`
+3. `git add -A; git commit -m "add wandb tracker"`
+4. `tao run main.py`
 
 Now, open your wandb dashboard, should get some charts there.
 
 ## Steps to auto tune paramters
 
 1. open `.tao/cfg.py`, uncomment `study_storage` and `tune_direction`
-2. `tao tune main.py --max_epochs 2`
+2. `git add -A; git commit -m "add wandb tracker"`
+3. `tao tune main.py --max_epochs 2`
