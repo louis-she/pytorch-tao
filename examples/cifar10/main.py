@@ -12,7 +12,7 @@ from pytorch_tao.plugins import (
     ProgressBar,
     Scheduler,
 )
-from pytorch_tao.trackers import WandbTracker
+# from pytorch_tao.trackers import WandbTracker  # Uncomment to use wandb
 from torch.optim.lr_scheduler import OneCycleLR
 from torch.utils.data import DataLoader
 from torchvision import datasets, transforms
@@ -28,8 +28,8 @@ class _args:
 
 tao.arguments(_args)
 
-tracker = WandbTracker("test")
-tao.set_tracker(tracker)
+# tracker = WandbTracker(tao.name)  # Uncomment to use wandb
+# tao.set_tracker(tracker)  # Uncomment to use wandb
 
 device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
 model = torch.hub.load("pytorch/vision:v0.10.0", "mobilenet_v2", pretrained=True)
@@ -83,7 +83,7 @@ trainer.use(
     )
 )
 
-trainer.use(tracker)
+# trainer.use(tracker)  # Uncomment to use wandb
 trainer.use(ProgressBar("loss"), at="train")
 trainer.use(Metric("accuracy", Accuracy()))
 trainer.use(Checkpoint("accuracy", {"model": model}))
