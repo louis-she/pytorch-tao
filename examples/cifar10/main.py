@@ -39,14 +39,20 @@ optimizer = torch.optim.Adam(model.parameters(), lr=tao.args.lr)
 
 train_loader = DataLoader(
     datasets.CIFAR10(
-        f"{os.getenv('HOME')}/datasets", train=True, transform=transforms.ToTensor()
+        f"{os.getenv('HOME')}/datasets",
+        train=True,
+        transform=transforms.ToTensor(),
+        download=True,
     ),
     batch_size=tao.args.batch_size,
     shuffle=True,
 )
 val_loader = DataLoader(
     datasets.CIFAR10(
-        f"{os.getenv('HOME')}/datasets", train=False, transform=transforms.ToTensor()
+        f"{os.getenv('HOME')}/datasets",
+        train=False,
+        transform=transforms.ToTensor(),
+        download=True,
     ),
     batch_size=tao.args.batch_size,
 )
