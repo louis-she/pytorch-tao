@@ -1,12 +1,12 @@
 import optuna
+from pathlib import Path
 
 
 # default environment configs
 class default:
-    name = "repo_for_tune"
-
     # tao run path
-    run_dir = "{{ run_dir }}"
+    run_dir = Path("{{ run_dir }}")
+    log_dir = Path("{{ log_dir }}")
 
     # tune options
     study_storage = "sqlite:///{{ sqlite_storage_path }}"

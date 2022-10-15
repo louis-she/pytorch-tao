@@ -8,6 +8,9 @@ from pytorch_tao import helper
 from pytorch_tao.plugins.base import BasePlugin
 
 
+logger = logging.getLogger(__name__)
+
+
 class OutputRecorder(BasePlugin):
     def __init__(self, *fields):
         super().__init__()
@@ -17,7 +20,7 @@ class OutputRecorder(BasePlugin):
     def _record_fields(self, engine: Engine):
         for field in self.fields:
             if field not in engine.state.output:
-                logging.warning(
+                logger.warning(
                     f"{field} is not in engines output keys {engine.state.output.keys()} "
                 )
             if helper.is_scalar(engine.state.output[field]):

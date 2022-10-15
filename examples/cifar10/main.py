@@ -19,7 +19,6 @@ from torchvision import datasets, transforms
 
 
 class _args:
-    name: str
     max_epochs: int = tao.arg(default=10)
     batch_size: int = tao.arg(
         default=128, tune=CategoricalDistribution([32, 64, 128, 256])
@@ -85,9 +84,9 @@ trainer.use(
 )
 
 trainer.use(tracker)
+trainer.use(ProgressBar("loss"), at="train")
 trainer.use(Metric("accuracy", Accuracy()))
 trainer.use(Checkpoint("accuracy", {"model": model}))
 trainer.use(OutputRecorder("loss"), at="train")
-trainer.use(ProgressBar("loss"), at="train")
 
 trainer.fit(max_epochs=tao.args.max_epochs)

@@ -2,11 +2,15 @@ import argparse
 import json
 import logging
 import sys
+from functools import reduce
 from typing import _GenericAlias, Any, Dict, List, Type
 
 from optuna.distributions import BaseDistribution
 
 import pytorch_tao as tao
+
+
+logger = logging.getLogger(__name__)
 
 
 class _Arg:
@@ -43,6 +47,13 @@ class _ArgSet:
 
     def __getattr__(self, name: str):
         return self._args[name].get()
+
+    def __repr__(self):
+        s = ["⛏  Arguments & Hyperparameters"]
+        max_key_len = reduce(lambda x, y: max(x, len(y)), self._args.keys(), 0)
+        for key, value in self._args.items():
+            s.append(f"{str(key).ljust(max_key_len + 2, ' ')}: {value.get()}")
+        return "\n".join(s)
 
     def add_arg(self, arg: _Arg):
         if arg.key in ["add_arg", "get_distribution"]:
@@ -91,7 +102,7 @@ def arguments(cls: Type):  # noqa: C901
 
         parser_kwargs = dict(default=arg.default, type=type)
         if type == bool and arg.default is True:
-            logging.warning(f"The value of type boolean key {key} will always be true")
+            logger.warning(f"The value of type boolean key {key} will always be true")
         if type == bool:
             parser_kwargs["action"] = "store_true"
             del parser_kwargs["type"]
@@ -113,3 +124,10 @@ def arguments(cls: Type):  # noqa: C901
             arg.set_value(getattr(parser_args, arg.key, None))
 
     tao.args = argset
+
+    if tao.trial and tao.log_dir:
+        # in tao tune mode, change log dir to sub dir
+        tao.log_dir = tao.log_dir / str(tao.trial._trial_id)
+
+    for line in repr(tao.args).split("\n"):
+        logger.info(line)

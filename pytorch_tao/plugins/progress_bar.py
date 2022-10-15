@@ -22,6 +22,9 @@ from pytorch_tao import helper
 from pytorch_tao.plugins import BasePlugin
 
 
+logger = logging.getLogger(__name__)
+
+
 class ProgressBar(BasePlugin):
     def __init__(self, *fields: Tuple[str], hardware: bool = True, interval: int = 1):
         super().__init__()
@@ -50,8 +53,6 @@ class ProgressBar(BasePlugin):
 
     @tao.on(Events.EPOCH_STARTED)
     def _create_tqdm(self, engine: Engine):
-        if self.pbar:
-            self.pbar.close()
         tpl = "%11s   "
         var = [f"🧪 epoch {engine.state.epoch}"]
         if psutil is not None:
@@ -77,7 +78,7 @@ class ProgressBar(BasePlugin):
         values = []
         for field in self.fields:
             if field not in engine.state.output:
-                logging.warning(
+                logger.warning(
                     f"{field} is not in engines output keys {engine.state.output.keys()} "
                 )
             if not helper.is_scalar(engine.state.output[field]):
@@ -116,3 +117,5 @@ class ProgressBar(BasePlugin):
         n = engine.state.iteration % engine.state.epoch_length
         self.pbar.n = n if n != 0 else engine.state.epoch_length
         self.pbar.refresh()
+        if n == 0:
+            self.pbar.close()

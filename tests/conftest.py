@@ -125,10 +125,15 @@ def fake_mnist_trainer():
 def test_repo():
     temp_dir = Path(tempfile.mkdtemp())
     repo_dir = temp_dir / "test_repo"
+    repo_dir_s = repo_dir.as_posix()
     repo = tao.Repo.create(repo_dir)
-    test_cfg = """
+    test_cfg = f"""
+from pathlib import Path
+
+
 class default:
-    run_dir = "./runs/"
+    log_dir = Path("{repo_dir_s}/log/")
+    run_dir = Path("{repo_dir_s}/runs/")
     dataset_dir = "/dataset/dir/in/default/cfg"
     kaggle_username = "snaker"
     kaggle_key = "xxxxxx"
@@ -193,6 +198,7 @@ def test_repo_for_tune(render_tpl):
             "repo_for_tune_cfg.py",
             sqlite_storage_path=(repo.tao_path / "study.db").as_posix(),
             run_dir=(repo.tao_path / "runs").as_posix(),
+            log_dir=(repo.tao_path / "log").as_posix(),
         )
     )
     tao.load_cfg(repo.cfg_path)

@@ -1,4 +1,3 @@
-import logging
 import os
 import shutil
 from copy import copy
@@ -6,7 +5,6 @@ from datetime import datetime
 from pathlib import Path
 from tempfile import mkdtemp
 from typing import Dict, Tuple, Union
-import warnings
 
 import git
 import optuna
@@ -30,14 +28,14 @@ class Repo:
         self.git_path = path / ".git"
         self.cfg_path = self.tao_path / "cfg.py"
         if self.tao_path.exists():
-            try:
-                self.git = git.Repo(self.path)
-            except git.InvalidGitRepositoryError:
-                warnings.warn("failed to initialze git, is .git dir in tao repo?")
-            try:
-                self.load_cfg()
-            except FileNotFoundError:
-                warnings.warn("failed to load config in tao repo")
+            self.preset()
+
+    def preset(self):
+        self.load_git()
+        self.load_cfg()
+
+    def load_git(self):
+        self.git = git.Repo(self.path)
 
     def init(self):
         self.tao_path.mkdir(exist_ok=False)
@@ -69,14 +67,13 @@ class Repo:
         return self.path.exists() and self.tao_path.exists() and self.git_path.exists()
 
     def torchrun(self, wd: Path, env: Dict[str, str], exclude_args: Tuple[str]):
+        env = {k: v for k, v in env.items() if v is not None}
         try:
             prev_cwd = os.getcwd()
             os.chdir(wd)
 
             main_process_env = dict(os.environ)
             os.environ.update(env)
-            for key, item in env.items():
-                os.environ[key] = item
             args = copy(tao.args)
             for arg in exclude_args:
                 delattr(args, arg)
@@ -93,31 +90,50 @@ class Repo:
             git.Repo.clone_from(self.path.as_posix(), wd.as_posix())
         return wd
 
-    @tao.ensure_config("run_dir", "study_storage")
+    @core.ensure_config("run_dir", "study_storage")
     def tune(self):
         """Start hyperparameter tunning process"""
         if self.git.is_dirty():
             raise DirtyRepoError()
         if tao.cfg.study_storage is None:
             raise ValueError("In memory study is not supported in tao")
+        tao_name = f"tune_{self.get_tao_name()}"
         tao.study = optuna.create_study(
-            study_name=tao.args.tao_tune_name,
+            study_name=tao_name,
             storage=tao.cfg.study_storage,
             load_if_exists=tao.args.tao_tune_duplicated,
             direction=tao.cfg.tune_direction,
         )
         wd = self.prepare_wd()
-        for _ in range(tao.args.tao_tune_max_trials):
+        for _ in range(tao.args.tao_tune_max_trials or int(1e9)):
             env = {
                 "TAO_COMMIT": self.git.head.ref.commit.hexsha,
-                "TAO_TUNE": tao.args.tao_tune_name,
+                "TAO_NAME": tao_name,
+                "TAO_TUNE": "1",
                 "TAO_RUN_AT": datetime.now().strftime("%m/%d/%Y, %H:%M:%S"),
                 "TAO_REPO": wd.as_posix(),
-                "PYTHONPATH": f'{wd.as_posix()}:{os.getenv("PYTHONPATH", "")}'
+                "PYTHONPATH": f'{wd.as_posix()}:{os.getenv("PYTHONPATH", "")}',
             }
-            self.torchrun(wd, env, ("tao_tune_name", "tao_tune_duplicated"))
+            self.torchrun(wd, env, ("tao_name", "tao_tune_duplicated"))
 
-    @tao.ensure_config("run_dir")
+    def get_tao_name(self):
+        if tao.args.tao_name:
+            return tao.args.tao_name
+        name = datetime.now().strftime("%m-%d_%H:%M")
+        if not self.is_dirty():
+            name = f"{name}_{self.head_hexsha(short=True)}"
+        return name
+
+    def is_dirty(self) -> bool:
+        return self.git.is_dirty()
+
+    def head_hexsha(self, short=False) -> str:
+        hexsha = self.git.head.ref.commit.hexsha
+        if short:
+            return hexsha[:8]
+        return hexsha
+
+    @core.ensure_config("run_dir")
     def run(self):
         """Start a training process.
 
@@ -131,13 +147,13 @@ class Repo:
             raise DirtyRepoError()
         wd = self.path if tao.args.tao_dirty else self.prepare_wd()
         env = {
+            "TAO_NAME": self.get_tao_name(),
             "TAO_COMMIT": self.git.head.ref.commit.hexsha,
             "TAO_RUN_AT": datetime.now().strftime("%m/%d/%Y, %H:%M:%S"),
             "TAO_REPO": wd.as_posix(),
-            "PYTHONPATH": f'{wd.as_posix()}:{os.getenv("PYTHONPATH", "")}'
+            "PYTHONPATH": f'{wd.as_posix()}:{os.getenv("PYTHONPATH", "")}',
+            "TAO_DIRTY": "1" if self.is_dirty() else None,
         }
-        if self.git.is_dirty(untracked_files=True):
-            env["TAO_DIRTY"] = "1"
         self.torchrun(wd, env, ("tao_dirty", "tao_cmd", "tao_commit"))
 
     @classmethod
@@ -161,7 +177,7 @@ class Repo:
             path = path.parent
         return cls(path)
 
-    @tao.ensure_config("kaggle_username", "kaggle_key", "kaggle_dataset_id")
+    @core.ensure_config("kaggle_username", "kaggle_key", "kaggle_dataset_id")
     def sync_code_to_kaggle(self):
         """Create a GitHub workflow that sync the source code to Kaggle dataset.
 

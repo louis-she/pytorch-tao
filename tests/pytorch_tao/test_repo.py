@@ -104,9 +104,8 @@ def test_run_with_dirty_option(test_repo: tao.Repo):
     assert "--test" in argv
     assert "--epochs" in argv
     assert "10" == option_value(argv, "--epochs")
-    assert "--dirty" in argv
-    assert "--commit" in argv
-    assert test_repo.git.head.ref.commit.hexsha == option_value(argv, "--commit")
+    assert "--dirty" not in argv
+    assert "--commit" not in argv
 
 
 def test_run_clean_repo(test_repo: tao.Repo):
@@ -179,7 +178,7 @@ def test_tune(test_repo_for_tune: tao.Repo):
     core.parse_tao_args(command)
     test_repo_for_tune.tune()
     study = optuna.load_study(
-        study_name="test_tune",
+        study_name="tune_test_tune",
         storage=f"sqlite:////{(test_repo_for_tune.tao_path / 'study.db').as_posix()}",
     )
     assert len(study.trials) == 10

@@ -1,16 +1,90 @@
 import argparse
+import logging
 import os
 import sys
+from datetime import datetime
 from functools import wraps
 from importlib import import_module
 from pathlib import Path
 from typing import Callable, Dict, List
 
 import jinja2
+from optuna import load_study
 
 from torch.distributed.run import get_args_parser
 
 import pytorch_tao as tao
+
+
+_log_format = "[%(levelname).1s %(asctime)s] %(message)s"
+
+
+class StreamLogFormatter(logging.Formatter):
+
+    grey = "\033[0;37m"
+    green = "\033[0;32m"
+    yellow = "\033[1;33m"
+    red = "\033[0;31m"
+    reset = "\033[0m"
+
+    FORMATS = {
+        logging.DEBUG: grey + "%s" + reset,
+        logging.INFO: green + "%s" + reset,
+        logging.WARNING: yellow + "%s" + reset,
+        logging.ERROR: red + "%s" + reset,
+        logging.CRITICAL: red + "%s" + reset,
+    }
+
+    def format(self, record):
+        log_fmt = self.FORMATS.get(record.levelno)
+        return log_fmt % super().format(record)
+
+
+def init_logger():
+    logger = logging.getLogger("pytorch_tao")
+    logger.setLevel(logging.INFO)
+
+    stream_handler = logging.StreamHandler(sys.stdout)
+    stream_handler.setFormatter(StreamLogFormatter(fmt=_log_format))
+
+    file_formatter = logging.Formatter(fmt=_log_format)
+    main_file_handler = logging.FileHandler(tao.cfg.log_dir / "log.txt", mode="a")
+    main_file_handler.setFormatter(file_formatter)
+    run_file_handler = logging.FileHandler(tao.log_dir / "log.txt", mode="w")
+    run_file_handler.setFormatter(file_formatter)
+
+    logger.addHandler(stream_handler)
+    logger.addHandler(main_file_handler)
+    logger.addHandler(run_file_handler)
+
+
+def init_from_env():
+    if not os.getenv("TAO_REPO", None):
+        return
+
+    from pytorch_tao.repo import Repo
+
+    # tao.repo, tao.cfg
+    tao.repo = Repo(os.getenv("TAO_REPO"))
+
+    # tao.name
+    tao.name = os.getenv("TAO_NAME")
+    if not tao.name:
+        tao.name = datetime.now().strftime("%m-%d_%H:%M")
+        if not tao.repo.is_dirty():
+            tao.name = f"{tao.name}_{tao.repo.head_hexsha(short=True)}"
+
+    # tao.tune, tao.study
+    tao.tune = True if os.getenv("TAO_TUNE") else False
+    if tao.tune:
+        tao.study = load_study(study_name=tao.name, storage=tao.cfg.study_storage)
+        # tao.trial will be inited in argument parse
+
+    # tao.log_dir
+    tao.log_dir = Path(tao.cfg.log_dir) / tao.name
+    tao.log_dir.mkdir(exist_ok=True, parents=True)
+
+    init_logger()
 
 
 def load_cfg(cfg_path: Path) -> Dict:
@@ -111,6 +185,14 @@ def parse_tao_args(args: str = None):
     )
 
     run_parser.add_argument(
+        "--name",
+        type=str,
+        dest="tao_name",
+        default=None,
+        help="Name of the this run",
+    )
+
+    run_parser.add_argument(
         "--dirty",
         action="store_true",
         dest="tao_dirty",
@@ -139,7 +221,9 @@ def parse_tao_args(args: str = None):
         help="Init a tao project",
     )
 
-    init_parser.add_argument("path", type=str, default=".", nargs="?", help="Path of the existing project")
+    init_parser.add_argument(
+        "path", type=str, default=".", nargs="?", help="Path of the existing project"
+    )
 
     tune_parser = subparsers.add_parser(
         "tune",
@@ -149,7 +233,10 @@ def parse_tao_args(args: str = None):
     )
 
     tune_parser.add_argument(
-        "--name", type=str, dest="tao_tune_name", help="Study name"
+        "--name",
+        type=str,
+        dest="tao_name",
+        help="Name of the this tune, also will be used as study name",
     )
     tune_parser.add_argument(
         "--max_trials", type=int, dest="tao_tune_max_trials", help="Number of trails"
@@ -166,7 +253,6 @@ def parse_tao_args(args: str = None):
 
 def run():
     tao.repo = tao.Repo.find_by_file(tao.args.training_script)
-    tao.load_cfg(tao.repo.cfg_path)
     tao.repo.run()
 
 
