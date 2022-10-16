@@ -1,5 +1,5 @@
 import sys
-from typing import List, Tuple
+from typing import Dict, List, Tuple
 
 import optuna
 
@@ -95,9 +95,14 @@ def test_arguments_will_create_trial(empty_argv):
 
 
 def test_arguments_with_wrong_type(empty_argv):
-
     class _WrongTypeArgument_1:
         a: Tuple[int] = 1
 
+    class _WrongTypeArgument_2:
+        a: Dict = {"a": "b"}
+
     with pytest.raises(TypeError):
         tao.arguments(_WrongTypeArgument_1)
+
+    with pytest.raises(TypeError):
+        tao.arguments(_WrongTypeArgument_2)
