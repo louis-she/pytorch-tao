@@ -85,3 +85,10 @@ def test_arguments_prior(empty_argv):
     assert tao.args.c == 17.0
     assert tao.args.d in ["Adam", "AdamW"]
     assert tao.args.a == 1
+
+
+def test_arguments_will_create_trial(empty_argv):
+    tao.study = optuna.create_study()
+    assert tao.trial is None
+    tao.arguments(_DistributionArgument)
+    assert isinstance(tao.trial, optuna.Trial)
