@@ -1,8 +1,10 @@
 import os
+from pathlib import Path
 
 import pytest
 import pytorch_tao as tao
 from ignite.engine import CallableEventWithFilter, Events
+import optuna
 
 
 def test_ensure_config(test_repo: tao.Repo):
@@ -46,3 +48,41 @@ def test_events_filter_once():
     assert isinstance(func._tao_event, CallableEventWithFilter)
     assert not func._tao_event.filter(None, 2)
     assert func._tao_event.filter(None, 10)
+
+
+def test_init_from_env_tao_repo_missing():
+    tao.init_from_env()
+    assert tao.repo is None
+    assert tao.name is None
+    assert tao.trial is None
+    assert tao.study is None
+    assert tao.log_dir is None
+
+
+def test_init_from_env_tao_repo_exists(test_repo: tao.Repo):
+    os.environ["TAO_REPO"] = test_repo.path.as_posix()
+    os.environ["TAO_NAME"] = "tao_name"
+    tao.init_from_env()
+    assert isinstance(tao.repo, tao.Repo)
+    assert tao.repo.path == test_repo.path
+    assert tao.trial is None
+    assert tao.name == "tao_name"
+    assert tao.study is None
+    assert isinstance(tao.log_dir, Path)
+
+
+def test_init_from_env_tao_tune(test_repo: tao.Repo):
+    os.environ["TAO_REPO"] = test_repo.path.as_posix()
+    os.environ["TAO_NAME"] = "tao_name"
+    os.environ["TAO_TUNE"] = "1"
+    optuna.create_study(
+        study_name="tao_name",
+        storage=tao.cfg.study_storage,
+        direction=tao.cfg.tune_direction,
+    )
+
+    tao.init_from_env()
+    assert isinstance(tao.repo, tao.Repo)
+    assert tao.trial is None
+    assert isinstance(tao.study, optuna.Study)
+    assert isinstance(tao.log_dir, Path)

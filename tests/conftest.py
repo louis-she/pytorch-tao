@@ -16,6 +16,8 @@ import torchvision
 from ignite.metrics import Metric as IMetric
 from torch.optim import SGD
 
+from pytorch_tao.trackers.base import Tracker
+
 
 class SimpleNet(nn.Module):
     def __init__(self):
@@ -63,6 +65,19 @@ def simplenet():
     return SimpleNet()
 
 
+@pytest.fixture(autouse=True, scope="function")
+def reset_tao_status():
+    tao.args = None
+    tao.study = None
+    tao.trial = None
+    tao.cfg = None
+    tao.repo = None
+    tao.tracker = Tracker()
+    tao.log_dir = None
+    tao.name = None
+    tao.tune = False
+
+
 @pytest.fixture(scope="function")
 def sum_metric():
     return SumMetric()
@@ -70,10 +85,11 @@ def sum_metric():
 
 @pytest.fixture(autouse=True)
 def reset_env():
-    try:
-        os.environ.pop("TAO_ENV")
-    except KeyError:
-        pass
+    for key in os.environ.keys():
+        if key.startswith("TAO_"):
+            os.environ.pop(key)
+    if "PYTHONPATH" in os.environ:
+        os.environ.pop("PYTHONPATH")
 
 
 @pytest.fixture(scope="session")
@@ -138,6 +154,8 @@ class default:
     kaggle_username = "snaker"
     kaggle_key = "xxxxxx"
     kaggle_dataset_id = "the_dataset_id"
+    study_storage = "sqlite:////{temp_dir}/tune.db"
+    tune_direction = "maximize"
 
 class colab(default):
     dataset_dir = "/dataset/dir/in/colab/cfg"

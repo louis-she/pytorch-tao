@@ -69,10 +69,6 @@ def init_from_env():
 
     # tao.name
     tao.name = os.getenv("TAO_NAME")
-    if not tao.name:
-        tao.name = datetime.now().strftime("%m-%d_%H:%M")
-        if not tao.repo.is_dirty():
-            tao.name = f"{tao.name}_{tao.repo.head_hexsha(short=True)}"
 
     # tao.tune, tao.study
     tao.tune = True if os.getenv("TAO_TUNE") else False

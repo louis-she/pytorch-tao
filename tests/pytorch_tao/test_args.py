@@ -94,6 +94,20 @@ def test_arguments_will_create_trial(empty_argv):
     assert isinstance(tao.trial, optuna.Trial)
 
 
+def test_conflicts_name(empty_argv):
+    class _ConflictsArgument_1:
+        add_arg: int = 1
+
+    class _ConflictsArgument_2:
+        get_distribution: int = 1
+
+    with pytest.raises(ValueError, match=f"Arg key add_arg conflicts with ArgSet func"):
+        tao.arguments(_ConflictsArgument_1)
+
+    with pytest.raises(ValueError, match=f"Arg key get_distribution conflicts with ArgSet func"):
+        tao.arguments(_ConflictsArgument_2)
+
+
 def test_arguments_with_wrong_type(empty_argv):
     class _WrongTypeArgument_1:
         a: Tuple[int] = 1
@@ -101,8 +115,8 @@ def test_arguments_with_wrong_type(empty_argv):
     class _WrongTypeArgument_2:
         a: Dict = {"a": "b"}
 
-    with pytest.raises(TypeError):
+    with pytest.raises(TypeError, match='typing.Tuple\[int\] is not a valid type, valid types are int, float, str, bool, List\[int\], List\[float\], List\[str\]'):
         tao.arguments(_WrongTypeArgument_1)
 
-    with pytest.raises(TypeError):
+    with pytest.raises(TypeError, match="typing.Dict is not a valid type, valid types are int, float, str, bool, List\[int\], List\[float\], List\[str\]"):
         tao.arguments(_WrongTypeArgument_2)

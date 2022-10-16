@@ -92,7 +92,9 @@ def arguments(cls: Type):  # noqa: C901
 
     for key, type in cls.__annotations__.items():
         if type not in [int, float, str, bool, List[int], List[float], List[str]]:
-            raise TypeError()
+            raise TypeError(
+                f"{type} is not a valid type, valid types are int, float, str, bool, List[int], List[float], List[str]"
+            )
         arg: _Arg = getattr(cls, key, None)
         if not isinstance(arg, _Arg):
             arg = _Arg(default=arg, distribution=None)
