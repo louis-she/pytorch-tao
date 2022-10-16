@@ -1,10 +1,11 @@
 import os
 from pathlib import Path
 
+import optuna
+
 import pytest
 import pytorch_tao as tao
 from ignite.engine import CallableEventWithFilter, Events
-import optuna
 
 
 def test_ensure_config(test_repo: tao.Repo):

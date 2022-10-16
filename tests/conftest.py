@@ -14,9 +14,9 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torchvision
 from ignite.metrics import Metric as IMetric
-from torch.optim import SGD
 
 from pytorch_tao.trackers.base import Tracker
+from torch.optim import SGD
 
 
 class SimpleNet(nn.Module):
