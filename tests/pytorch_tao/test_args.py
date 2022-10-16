@@ -1,5 +1,5 @@
 import sys
-from typing import List
+from typing import List, Tuple
 
 import optuna
 
@@ -89,6 +89,15 @@ def test_arguments_prior(empty_argv):
 
 def test_arguments_will_create_trial(empty_argv):
     tao.study = optuna.create_study()
-    assert tao.trial is None
+    tao.trial = None
     tao.arguments(_DistributionArgument)
     assert isinstance(tao.trial, optuna.Trial)
+
+
+def test_arguments_with_wrong_type(empty_argv):
+
+    class _WrongTypeArgument_1:
+        a: Tuple[int] = 1
+
+    with pytest.raises(TypeError):
+        tao.arguments(_WrongTypeArgument_1)
