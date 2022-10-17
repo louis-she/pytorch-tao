@@ -46,7 +46,10 @@ class _ArgSet:
         self._args = {}
 
     def __getattr__(self, name: str):
-        return self._args[name].get()
+        if name in self._args:
+            return self._args[name].get()
+        else:
+            raise AttributeError()
 
     def __repr__(self):
         s = ["⛏  Arguments & Hyperparameters"]

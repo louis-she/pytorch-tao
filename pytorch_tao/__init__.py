@@ -9,6 +9,7 @@ from optuna import Study, Trial
 from pytorch_tao.args import _ArgSet, arg, arguments
 
 from pytorch_tao.core import (
+    ArgMissingError,
     ConfigMissingError,
     ensure_arg,
     ensure_config,
@@ -43,6 +44,7 @@ __all__ = [
     "ensure_config",
     "ensure_arg",
     "ConfigMissingError",
+    "ArgMissingError",
     "args",
     "study",
     "trial",

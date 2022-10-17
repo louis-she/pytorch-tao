@@ -94,7 +94,7 @@ class Repo:
     def tune(self):
         """Start hyperparameter tunning process"""
         if self.git.is_dirty():
-            raise DirtyRepoError()
+            raise DirtyRepoError("`tao tune` requires the repo to be clean")
         if tao.cfg.study_storage is None:
             raise ValueError("In memory study is not supported in tao")
         tao_name = f"tune_{self.get_tao_name()}"
@@ -144,7 +144,10 @@ class Repo:
             self.git.git.add(all=True)
             self.git.index.commit(tao.args.tao_commit)
         if not tao.args.tao_dirty and self.git.is_dirty(untracked_files=True):
-            raise DirtyRepoError()
+            raise DirtyRepoError(
+                "`tao run` requires the repo to be clean, "
+                "or use `tao run --dirty` to run in dirty mode"
+            )
         wd = self.path if tao.args.tao_dirty else self.prepare_wd()
         env = {
             "TAO_NAME": self.get_tao_name(),

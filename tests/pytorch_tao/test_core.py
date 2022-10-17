@@ -1,4 +1,7 @@
+import logging
 import os
+import sys
+import tempfile
 from pathlib import Path
 
 import optuna
@@ -6,6 +9,9 @@ import optuna
 import pytest
 import pytorch_tao as tao
 from ignite.engine import CallableEventWithFilter, Events
+
+from pytorch_tao import core
+from pytorch_tao.repo import DirtyRepoError
 
 
 def test_ensure_config(test_repo: tao.Repo):
@@ -21,6 +27,32 @@ def test_ensure_config(test_repo: tao.Repo):
     os.environ["TAO_ENV"] = "colab"
     tao.load_cfg(test_repo.cfg_path)
     assert read_colab_drive_file()
+
+
+def test_ensure_arg():
+    @tao.ensure_arg("max_epochs")
+    def run():
+        return True
+
+    with pytest.raises(
+        tao.ArgMissingError,
+        match="Arg \\{'max_epochs'\\} must be present for calling run",
+    ):
+        sys.argv = ["mock.py", "--a", "1"]
+
+        class _MockArg_Wrong:
+            a: str = 1
+
+        tao.arguments(_MockArg_Wrong)
+        run()
+
+    sys.argv = ["mock.py", "--max_epochs", "1"]
+
+    class _MockArg_Right:
+        max_epochs: str = 1
+
+    tao.arguments(_MockArg_Right)
+    run()
 
 
 def test_events_register():
@@ -87,3 +119,75 @@ def test_init_from_env_tao_tune(test_repo: tao.Repo):
     assert tao.trial is None
     assert isinstance(tao.study, optuna.Study)
     assert isinstance(tao.log_dir, Path)
+
+    tao_root_logger = logging.getLogger("pytorch_tao")
+    assert isinstance(tao_root_logger.handlers[0], logging.StreamHandler)
+    assert isinstance(tao_root_logger.handlers[1], logging.FileHandler)
+    assert (
+        tao_root_logger.handlers[1].baseFilename
+        == (tao.cfg.log_dir / "log.txt").absolute().as_posix()
+    )
+    assert isinstance(tao_root_logger.handlers[2], logging.FileHandler)
+    assert (
+        tao_root_logger.handlers[2].baseFilename
+        == (tao.log_dir / "log.txt").absolute().as_posix()
+    )
+
+
+def test_dispatch_run(test_repo: tao.Repo):
+    sys.argv = ["tao", "run", (test_repo.path / "scripts" / "train.py").as_posix()]
+    core.parse_tao_args()
+    assert tao.args.tao_cmd == "run"
+    assert (
+        tao.args.training_script == (test_repo.path / "scripts" / "train.py").as_posix()
+    )
+
+    with pytest.raises(
+        DirtyRepoError,
+        match="`tao run` requires the repo to be clean, or use `tao run --dirty` to run in dirty mode",
+    ):
+        core.dispatch()
+
+
+def test_dispatch_tune(test_repo: tao.Repo):
+    sys.argv = ["tao", "tune", (test_repo.path / "scripts" / "train.py").as_posix()]
+    core.parse_tao_args()
+    assert tao.args.tao_cmd == "tune"
+    assert (
+        tao.args.training_script == (test_repo.path / "scripts" / "train.py").as_posix()
+    )
+
+    with pytest.raises(
+        DirtyRepoError, match="`tao tune` requires the repo to be clean"
+    ):
+        core.dispatch()
+
+
+def test_dispatch_new():
+    with tempfile.TemporaryDirectory() as tmpdirname:
+        path = Path(tmpdirname)
+        project_path = path / "new_tao_project"
+        sys.argv = ["tao", "new", project_path.as_posix()]
+        core.parse_tao_args()
+        assert tao.args.tao_cmd == "new"
+        assert tao.args.path == project_path.as_posix()
+        core.dispatch()
+
+        assert project_path.exists()
+        assert (project_path / ".tao" / "cfg.py").is_file()
+        assert (project_path / ".git").is_dir()
+        assert (project_path / ".gitignore").is_file()
+
+
+def test_dispatch_init():
+    with tempfile.TemporaryDirectory() as tmpdirname:
+        path = Path(tmpdirname)
+        sys.argv = ["tao", "init", path.as_posix()]
+        core.parse_tao_args()
+        assert tao.args.tao_cmd == "init"
+        assert tao.args.path == path.as_posix()
+        core.dispatch()
+
+        assert (path / ".tao" / "cfg.py").is_file()
+        assert (path / ".git").is_dir()
+        assert (path / ".gitignore").is_file()

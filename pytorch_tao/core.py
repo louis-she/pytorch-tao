@@ -246,37 +246,33 @@ def parse_tao_args(args: str = None):
     tao.args = parser.parse_args(args)
 
 
-def run():
-    tao.repo = tao.Repo.find_by_file(tao.args.training_script)
-    tao.repo.run()
-
-
-def new():
-    tao.Repo.create(tao.args.path)
-
-
-def init():
-    repo = tao.Repo(tao.args.path)
-    repo.init()
-
-
-def tune():
-    tao.repo = tao.Repo.find_by_file(tao.args.training_script)
-    tao.load_cfg(tao.repo.cfg_path)
-    tao.repo.tune()
-
-
-_cmd = {
-    "run": run,
-    "new": new,
-    "init": init,
-    "tune": tune,
-}
-
-
 def dispatch():
     if tao.args is None:
         raise RuntimeError("Should parse args before dispatch")
+
+    def _run():
+        tao.repo = tao.Repo.find_by_file(tao.args.training_script)
+        tao.repo.run()
+
+    def _new():
+        tao.Repo.create(tao.args.path)
+
+    def _init():
+        repo = tao.Repo(tao.args.path)
+        repo.init()
+
+    def _tune():
+        tao.repo = tao.Repo.find_by_file(tao.args.training_script)
+        tao.load_cfg(tao.repo.cfg_path)
+        tao.repo.tune()
+
+    _cmd = {
+        "run": _run,
+        "new": _new,
+        "init": _init,
+        "tune": _tune,
+    }
+
     _cmd[tao.args.tao_cmd]()
 
 
