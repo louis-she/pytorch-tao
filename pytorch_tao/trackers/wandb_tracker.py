@@ -16,7 +16,7 @@ from pytorch_tao.trackers.base import Tracker
 
 
 class WandbTracker(Tracker, TrainPlugin):
-    @tao.ensure_config("log_dir", "wandb_project")
+    @tao.ensure_config("wandb_project")
     def __init__(self, name):
         super().__init__()
         if wandb is None:
@@ -33,7 +33,8 @@ class WandbTracker(Tracker, TrainPlugin):
     def add_image(self, image_name: str, images: List[np.ndarray]):
         if not isinstance(images, list):
             images = [images]
-        wandb.log({image_name: wandb.Image(images)})
+        images = [wandb.Image(image) for image in images]
+        wandb.log({image_name: images})
 
     def add_points(self, points: Dict):
         wandb.log(points)
