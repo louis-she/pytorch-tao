@@ -103,6 +103,7 @@ class Trainer:
     ):
         def decorator(func: Callable):
             @torch.autocast(self.device.type, enabled=amp)
+            @torch.set_grad_enabled(False)
             @wraps(func)
             def _func(engine: Engine, batch):
                 if self.model is not None:

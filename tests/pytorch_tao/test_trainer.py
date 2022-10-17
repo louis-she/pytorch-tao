@@ -45,6 +45,7 @@ def test_trainer_train_decorator(fake_mnist_trainer: tao.Trainer):
         assert images.device.type == "cpu"
         assert labels.device.type == "cpu"
         assert next(fake_mnist_trainer.model.parameters()).device.type == "cpu"
+        assert fake_mnist_trainer.model.training
         return torch.tensor(1.0, requires_grad=True)
 
     fake_mnist_trainer.fit(max_epochs=1)
@@ -99,3 +100,139 @@ def test_trainer_train_decorator_grad(
         return torch.nn.functional.cross_entropy(logits, labels)
 
     fake_mnist_trainer.fit(max_epochs=1)
+
+
+def test_trainer_train_decorator_amp(
+    fake_mnist_trainer: tao.Trainer, tracker: tao.Tracker
+):
+    @fake_mnist_trainer.train(amp=False)
+    def _(images, labels):
+        output = torch.tensor([1.0]) @ torch.tensor([2.0])
+        assert output.dtype == torch.float32
+        return torch.tensor(1.0, requires_grad=True)
+
+    fake_mnist_trainer.fit(max_epochs=1)
+
+    @fake_mnist_trainer.train(amp=True)
+    def _(images, labels):
+        output = torch.tensor([1.0]) @ torch.tensor([2.0])
+        assert output.dtype == torch.bfloat16
+        return torch.tensor(1.0, requires_grad=True)
+
+    fake_mnist_trainer.fit(max_epochs=1)
+
+
+def test_trainer_train_decorator_output_scalar(
+    fake_mnist_trainer: tao.Trainer, tracker: tao.Tracker
+):
+    @fake_mnist_trainer.train(amp=False)
+    def _(images, labels):
+        return torch.tensor(1.0, requires_grad=False)
+
+    with pytest.raises(
+        RuntimeError,
+        match="element 0 of tensors does not require grad and does not have a grad_fn",
+    ):
+        fake_mnist_trainer.fit(max_epochs=1)
+
+    @fake_mnist_trainer.train(amp=True)
+    def _(images, labels):
+        return torch.tensor(1.0, requires_grad=False)
+
+    fake_mnist_trainer.fit(max_epochs=1)
+
+
+def test_trainer_train_decorator_output_list(
+    fake_mnist_trainer: tao.Trainer, tracker: tao.Tracker
+):
+    @fake_mnist_trainer.train()
+    def _(images, labels):
+        return [
+            torch.tensor(1.0, requires_grad=False),
+            torch.tensor(2.0, requires_grad=True),
+            1,
+            "some_other_thing",
+        ]
+
+    with pytest.raises(
+        RuntimeError,
+        match="element 0 of tensors does not require grad and does not have a grad_fn",
+    ):
+        fake_mnist_trainer.fit(max_epochs=1)
+
+    @fake_mnist_trainer.train()
+    def _(images, labels):
+        return [
+            torch.tensor(1.0, requires_grad=True),
+            torch.tensor(2.0, requires_grad=False),
+            1,
+            "some_other_thing",
+        ]
+
+    fake_mnist_trainer.fit(max_epochs=1)
+
+
+def test_trainer_train_decorator_output_dict(
+    fake_mnist_trainer: tao.Trainer, tracker: tao.Tracker
+):
+    @fake_mnist_trainer.train()
+    def _(images, labels):
+        return {
+            "cls_loss": torch.tensor(1.0, requires_grad=True),
+            "seg_loss": torch.tensor(2.0, requires_grad=True),
+        }
+
+    with pytest.raises(
+        KeyError,
+        match="loss",
+    ):
+        fake_mnist_trainer.fit(max_epochs=1)
+
+    @fake_mnist_trainer.train()
+    def _(images, labels):
+        return {
+            "loss": torch.tensor(3.0, requires_grad=True),
+            "cls_loss": torch.tensor(1.0, requires_grad=False),
+            "seg_loss": torch.tensor(2.0, requires_grad=True),
+        }
+
+    fake_mnist_trainer.fit(max_epochs=1)
+
+
+def test_trainer_eval_decorator(fake_mnist_trainer: tao.Trainer):
+    @fake_mnist_trainer.eval()
+    def _(images, labels):
+        assert not fake_mnist_trainer.model.training
+
+    fake_mnist_trainer.fit(max_epochs=1)
+
+
+def test_trainer_eval_should_not_have_grad(fake_mnist_trainer: tao.Trainer):
+    @fake_mnist_trainer.eval()
+    def _(images, labels):
+        logits = fake_mnist_trainer.model(images)
+        loss = torch.nn.functional.cross_entropy(logits, labels)
+        with pytest.raises(
+            RuntimeError,
+            match="element 0 of tensors does not require grad and does not have a grad_fn",
+        ):
+            loss.backward()
+
+    fake_mnist_trainer.fit(max_epochs=1)
+
+
+def test_trainer_to_cpu(fake_mnist_trainer: tao.Trainer):
+    assert fake_mnist_trainer.device.type == "cpu"
+    assert next(fake_mnist_trainer.model.parameters()).device.type == "cpu"
+    fake_mnist_trainer.to("cpu")
+    assert fake_mnist_trainer.device.type == "cpu"
+    assert next(fake_mnist_trainer.model.parameters()).device.type == "cpu"
+
+
+@pytest.mark.skipif(not torch.cuda.is_available(), reason="cuda only")
+def test_trainer_to_cuda(fake_mnist_trainer: tao.Trainer):
+    assert fake_mnist_trainer.device.type == "cpu"
+    assert next(fake_mnist_trainer.model.parameters()).device.type == "cpu"
+    fake_mnist_trainer.to("cuda")
+    assert fake_mnist_trainer.device.type == "cuda"
+    assert next(fake_mnist_trainer.model.parameters()).device.type == "cuda"

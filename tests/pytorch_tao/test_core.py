@@ -134,6 +134,12 @@ def test_init_from_env_tao_tune(test_repo: tao.Repo):
     )
 
 
+def test_dispatch_args_none(test_repo):
+    sys.argv = ["tao", "run", (test_repo.path / "scripts" / "train.py").as_posix()]
+    with pytest.raises(RuntimeError, match="Should parse args before dispatch"):
+        core.dispatch()
+
+
 def test_dispatch_run(test_repo: tao.Repo):
     sys.argv = ["tao", "run", (test_repo.path / "scripts" / "train.py").as_posix()]
     core.parse_tao_args()
