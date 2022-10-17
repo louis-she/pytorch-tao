@@ -3,6 +3,7 @@ import pytorch_tao as tao
 import torch
 from ignite.engine import Events
 from pytorch_tao.plugins.base import TrainPlugin, ValPlugin
+from torch.optim import SGD
 
 
 class Counter:
@@ -107,17 +108,17 @@ def test_trainer_train_decorator_amp(
 ):
     @fake_mnist_trainer.train(amp=False)
     def _(images, labels):
-        output = torch.tensor([1.0]) @ torch.tensor([2.0])
-        assert output.dtype == torch.float32
-        return torch.tensor(1.0, requires_grad=True)
+        logits = fake_mnist_trainer.model(images)
+        assert logits.dtype == torch.float32
+        return torch.nn.functional.cross_entropy(logits, labels)
 
     fake_mnist_trainer.fit(max_epochs=1)
 
     @fake_mnist_trainer.train(amp=True)
     def _(images, labels):
-        output = torch.tensor([1.0]) @ torch.tensor([2.0])
-        assert output.dtype == torch.bfloat16
-        return torch.tensor(1.0, requires_grad=True)
+        logits = fake_mnist_trainer.model(images)
+        assert logits.dtype == torch.bfloat16
+        return torch.nn.functional.cross_entropy(logits, labels)
 
     fake_mnist_trainer.fit(max_epochs=1)
 
@@ -219,6 +220,42 @@ def test_trainer_eval_should_not_have_grad(fake_mnist_trainer: tao.Trainer):
             loss.backward()
 
     fake_mnist_trainer.fit(max_epochs=1)
+
+
+def test_trainer_train_with_dict_batch(simplenet):
+    batch = {
+        "images": torch.rand(4, 3, 224, 224).float(),
+        "labels": torch.randint(0, 9, (4,)).long(),
+        "masks": torch.randint(0, 1, (4, 3, 224, 224)).long(),
+    }
+    trainer = tao.Trainer(
+        train_loader=[batch],
+        val_loader=[batch],
+        model=simplenet,
+        optimizer=SGD(simplenet.parameters(), lr=0.01),
+    )
+
+    @trainer.train()
+    def _(images, labels, masks):
+        assert images.dtype == torch.float32
+        assert images.shape == torch.Size((4, 3, 224, 224))
+        assert labels.dtype == torch.long
+        assert labels.shape == torch.Size((4,))
+        assert masks.dtype == torch.long
+        assert masks.shape == torch.Size((4, 3, 224, 224))
+        return torch.tensor(1.0, requires_grad=True)
+
+    trainer.fit(max_epochs=1)
+
+    @trainer.train(fields=["images", "masks"])
+    def _(images, masks):
+        assert images.dtype == torch.float32
+        assert images.shape == torch.Size((4, 3, 224, 224))
+        assert masks.dtype == torch.long
+        assert masks.shape == torch.Size((4, 3, 224, 224))
+        return torch.tensor(1.0, requires_grad=True)
+
+    trainer.fit(max_epochs=1)
 
 
 def test_trainer_to_cpu(fake_mnist_trainer: tao.Trainer):

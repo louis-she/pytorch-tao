@@ -126,16 +126,13 @@ class Trainer:
             return func(*[batch[f] for f in fields])
 
         elif isinstance(batch, dict):
-            batch = tuple(
-                [x.to(self.device) if isinstance(x, torch.Tensor) else x for x in batch]
-            )
             batch = {
                 x: y.to(self.device) if isinstance(y, torch.Tensor) else y
                 for x, y in batch.items()
             }
             if fields is None:
                 return func(**batch)
-            return func(**[batch[f] for f in fields])
+            return func(**{f: batch[f] for f in fields})
         else:
             raise ValueError(f"the type of batch yield is not supported {type(batch)}")
 
