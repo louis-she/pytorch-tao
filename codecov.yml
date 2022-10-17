@@ -1,0 +1,4 @@
+ignore:
+  - "pytorch_tao/cli.py"
+  - "pytorch_tao/devtool.py"
+  - "**/*.jinja"
