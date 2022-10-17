@@ -1,3 +1,4 @@
+import logging
 import os
 import shutil
 import tempfile
@@ -78,11 +79,6 @@ def reset_tao_status():
     tao.tune = False
 
 
-@pytest.fixture(scope="function")
-def sum_metric():
-    return SumMetric()
-
-
 @pytest.fixture(autouse=True)
 def reset_env():
     for key in os.environ.keys():
@@ -90,6 +86,17 @@ def reset_env():
             os.environ.pop(key)
     if "PYTHONPATH" in os.environ:
         os.environ.pop("PYTHONPATH")
+
+
+@pytest.fixture(autouse=True)
+def reset_logger():
+    logger = logging.getLogger("pytorch_tao")
+    logger.handlers.clear()
+
+
+@pytest.fixture(scope="function")
+def sum_metric():
+    return SumMetric()
 
 
 @pytest.fixture(scope="session")
