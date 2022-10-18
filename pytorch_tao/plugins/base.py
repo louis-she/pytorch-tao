@@ -22,7 +22,7 @@ class BasePlugin:
                 continue
             func = getattr(self, key)
             tao_event_handler = getattr(func, "_tao_event", None)
-            if tao_event_handler is None or not callable(tao_event_handler):
+            if tao_event_handler is None:
                 continue
             if not self._is_event_handler(tao_event_handler):
                 try:
