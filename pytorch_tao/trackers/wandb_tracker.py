@@ -29,7 +29,8 @@ class WandbTracker(Tracker, TrainPlugin):
             name=name,
             group=os.environ.get("TAO_TUNE"),
         )
-        self.update_meta(tao.args.dict())
+        if tao.args:
+            self.update_meta(tao.args.dict())
 
     def add_image(self, image_name: str, images: List[np.ndarray]):
         if not isinstance(images, list):
