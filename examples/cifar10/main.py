@@ -24,7 +24,7 @@ class _args:
     batch_size: int = tao.arg(
         default=128, tune=CategoricalDistribution([32, 64, 128, 256])
     )
-    lr: float = tao.arg(default=128, tune=FloatDistribution(low=3e-4, high=3e-2))
+    lr: float = tao.arg(default=3e-4, tune=FloatDistribution(low=3e-4, high=3e-2))
 
 
 tao.arguments(_args)
@@ -33,7 +33,7 @@ tao.arguments(_args)
 # tao.set_tracker(tracker)  # Uncomment to use wandb
 
 device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
-model = torch.hub.load("pytorch/vision:v0.10.0", "mobilenet_v2", pretrained=True)
+model = torch.hub.load("pytorch/vision:v0.10.0", "mobilenet_v2", weights="MobileNet_V2_Weights.DEFAULT")
 model.classifier[1] = torch.nn.Linear(1280, 10)
 optimizer = torch.optim.Adam(model.parameters(), lr=tao.args.lr)
 
@@ -58,7 +58,7 @@ val_loader = DataLoader(
 )
 
 trainer = tao.Trainer(
-    device="cuda",
+    device=device,
     model=model,
     optimizer=optimizer,
     train_loader=train_loader,
@@ -66,15 +66,15 @@ trainer = tao.Trainer(
 )
 
 
-@trainer.train(amp=True)
-def train(images, targets):
+@trainer.train(amp=device.type == "cuda")
+def _train(images, targets):
     logits = model(images)
     loss = F.cross_entropy(logits, targets)
     return {"loss": loss}
 
 
 @trainer.eval()
-def val_batch(images, targets):
+def _val(images, targets):
     logits = model(images)
     return {"y_pred": logits, "y": targets}
 

@@ -12,6 +12,9 @@ logger = logging.getLogger(__name__)
 
 
 class Metric(ValPlugin):
+
+    __skip_tao_event__ = ["_metric"]
+
     def __init__(self, name: str, metric: IMetric, tune=False):
         self._metric = metric
         self.name = name

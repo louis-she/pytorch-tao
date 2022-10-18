@@ -1,11 +1,12 @@
 import warnings
-from typing import Callable
+from typing import Callable, List
 
 from ignite.engine import CallableEventWithFilter, Engine, EventsList
 
 
 class BasePlugin:
     engine: Engine
+    __skip_tao_event__: List[str] = []
 
     def __init__(self, attach_to: str = None):
         self.attach_to = attach_to
@@ -17,9 +18,11 @@ class BasePlugin:
     def attach(self, engine: Engine):
         self.set_engine(engine)
         for key in dir(self):
+            if key in self.__skip_tao_event__:
+                continue
             func = getattr(self, key)
             tao_event_handler = getattr(func, "_tao_event", None)
-            if tao_event_handler is None:
+            if tao_event_handler is None or not callable(tao_event_handler):
                 continue
             if not self._is_event_handler(tao_event_handler):
                 try:
@@ -28,7 +31,7 @@ class BasePlugin:
                     warnings.warn("event handler lambda should return valid event type")
                     continue
                 if not self._is_event_handler(tao_event_handler):
-                    warnings.warn("event handler lambda should return valid event type")
+                    warnings.warn(f"event handler lambda should return valid event type {tao_event_handler}")
                     continue
             engine.add_event_handler(tao_event_handler, func)
 

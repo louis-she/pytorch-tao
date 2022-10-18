@@ -1,6 +1,6 @@
 # Cifar example using Tao
 
-This is a image classification task using Tao to solve. The task is easy but the example covers almost everything Tao has.
+This is a image classification task using Tao to solve. The task is easy but the example covers almost everything Tao has. Before start you should install the dependencies from `requirements.txt`.
 
 ## Steps to run
 

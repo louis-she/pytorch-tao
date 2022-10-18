@@ -63,6 +63,9 @@ class _ArgSet:
             raise ValueError(f"Arg key {arg.key} conflicts with ArgSet func")
         self._args[arg.key] = arg
 
+    def dict(self):
+        return {k: v.get() for k, v in self._args.items()}
+
     def get_distribution(self):
         return {
             k: v.distribution

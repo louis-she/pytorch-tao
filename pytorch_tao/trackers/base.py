@@ -12,3 +12,6 @@ class Tracker:
 
     def add_image(self, image: np.ndarray):
         pass
+
+    def update_meta(self, meta: dict):
+        pass

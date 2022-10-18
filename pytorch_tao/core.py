@@ -40,21 +40,23 @@ class StreamLogFormatter(logging.Formatter):
 
 
 def init_logger():
-    logger = logging.getLogger("pytorch_tao")
-    logger.setLevel(logging.INFO)
+    for logger in [logging.getLogger("pytorch_tao"), logging.getLogger("py.warnings")]:
+        logger.setLevel(logging.INFO)
 
-    stream_handler = logging.StreamHandler(sys.stdout)
-    stream_handler.setFormatter(StreamLogFormatter(fmt=_log_format))
+        stream_handler = logging.StreamHandler(sys.stdout)
+        stream_handler.setFormatter(StreamLogFormatter(fmt=_log_format))
 
-    file_formatter = logging.Formatter(fmt=_log_format)
-    main_file_handler = logging.FileHandler(tao.cfg.log_dir / "log.txt", mode="a")
-    main_file_handler.setFormatter(file_formatter)
-    run_file_handler = logging.FileHandler(tao.log_dir / "log.txt", mode="w")
-    run_file_handler.setFormatter(file_formatter)
+        file_formatter = logging.Formatter(fmt=_log_format)
+        main_file_handler = logging.FileHandler(tao.cfg.log_dir / "log.txt", mode="a")
+        main_file_handler.setFormatter(file_formatter)
+        run_file_handler = logging.FileHandler(tao.log_dir / "log.txt", mode="w")
+        run_file_handler.setFormatter(file_formatter)
 
-    logger.addHandler(stream_handler)
-    logger.addHandler(main_file_handler)
-    logger.addHandler(run_file_handler)
+        logger.addHandler(stream_handler)
+        logger.addHandler(main_file_handler)
+        logger.addHandler(run_file_handler)
+
+    logging.captureWarnings(True)
 
 
 def init_from_env():

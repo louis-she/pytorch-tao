@@ -58,6 +58,36 @@ def test_attach_events(trainer: tao.Trainer):
     assert plugin.sum_with_stride == 50
 
 
+def test_attach_not_events(trainer: tao.Trainer):
+    class _TestPlugin(base.TrainPlugin):
+        __skip_tao_event__ = ["_plus_two"]
+
+        def __init__(self):
+            super().__init__()
+            self.sum = 0
+            self.sum_with_stride = 0
+            self.sum_stride = 2
+
+        @tao.on(Events.ITERATION_COMPLETED)
+        def _plus_one(self):
+            self.sum += 1
+
+        @tao.on(Events.ITERATION_COMPLETED)
+        def _plus_two(self):
+            self.sum += 2
+
+        @tao.on(lambda self: Events.ITERATION_COMPLETED(every=self.sum_stride))
+        def _plus_one_stride(self):
+            self.sum_with_stride += 1
+
+    plugin = _TestPlugin()
+    trainer.use(plugin)
+    trainer.fit(max_epochs=1)
+
+    assert plugin.sum == 100
+    assert plugin.sum_with_stride == 50
+
+
 def test_attach_wrong_events(trainer: tao.Trainer):
     class _TestPlugin(base.TrainPlugin):
         @tao.on(1)

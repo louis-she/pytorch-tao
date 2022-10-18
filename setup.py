@@ -50,6 +50,7 @@ setup(
     license="MIT",
     packages=find_packages(exclude=("tests", "tests.*")),
     install_requires=requirements,
+    include_package_data=True,
     entry_points={
         "console_scripts": [
             "tao = pytorch_tao.cli:main",

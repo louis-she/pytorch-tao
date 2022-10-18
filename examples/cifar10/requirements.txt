@@ -1,0 +1,5 @@
+pytorch_tao
+torchvision
+psutil
+pynvml
+wandb
