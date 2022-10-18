@@ -31,7 +31,9 @@ class BasePlugin:
                     warnings.warn("event handler lambda should return valid event type")
                     continue
                 if not self._is_event_handler(tao_event_handler):
-                    warnings.warn(f"event handler lambda should return valid event type {tao_event_handler}")
+                    warnings.warn(
+                        f"event handler lambda should return valid event type {tao_event_handler}"
+                    )
                     continue
             engine.add_event_handler(tao_event_handler, func)
 

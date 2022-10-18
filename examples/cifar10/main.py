@@ -33,7 +33,9 @@ tao.arguments(_args)
 # tao.set_tracker(tracker)  # Uncomment to use wandb
 
 device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
-model = torch.hub.load("pytorch/vision:v0.10.0", "mobilenet_v2", weights="MobileNet_V2_Weights.DEFAULT")
+model = torch.hub.load(
+    "pytorch/vision:v0.10.0", "mobilenet_v2", weights="MobileNet_V2_Weights.DEFAULT"
+)
 model.classifier[1] = torch.nn.Linear(1280, 10)
 optimizer = torch.optim.Adam(model.parameters(), lr=tao.args.lr)
 
