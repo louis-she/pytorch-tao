@@ -4,6 +4,8 @@ import numpy as np
 
 
 class Tracker:
+    """Base class for all other trackers"""
+
     def set_global_step(self, step: int):
         self.global_step = step
 

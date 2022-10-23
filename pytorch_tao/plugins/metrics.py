@@ -12,6 +12,23 @@ logger = logging.getLogger(__name__)
 
 
 class Metric(ValPlugin):
+    """Adapter plugin for ignite metrics.
+    Use this plugin as a adapter for using :doc:`ignite:metrics`.
+
+    Args:
+        name: name of the metric score
+        metric: :class:`ignite:ignite.metrics.metric.Metric` instance
+        tune: if tune based on this metric
+
+    .. code-block:: python
+
+        import pytorch_tao as tao
+        from pytorch_tao.plugin import Metric
+        from ignite.metrics import Accuracy
+
+        trainer = tao.Trainer()
+        trainer.use(Metric("accuracy", Accuracy()))
+    """
 
     __skip_tao_event__ = ["_metric"]
 

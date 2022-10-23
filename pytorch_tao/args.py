@@ -1,4 +1,5 @@
 import argparse
+from collections import OrderedDict
 import json
 import logging
 import sys
@@ -82,9 +83,11 @@ def arg(default: Any, tune: BaseDistribution = None):
 
 
 def arguments(cls: Type):  # noqa: C901
-    """Decorator of class that determine the arguments(hyperparameters).
+    """Decorator of class for parsing the arguments(hyperparameters).
 
-    There are 3 ways to obtain a argument value, in the prior order, they are:
+    see :func:`pytorch_tao.arguments`
+
+    There are 3 ways to obtain value of a argument, in the prior order, they are:
 
     1. commmand line interface
     2. optuna distribution
@@ -92,6 +95,27 @@ def arguments(cls: Type):  # noqa: C901
 
     even when tuning with `tao tune`, we can still pass command line argument
     to override the distribution one.
+
+    After executed, we can access `tao.args.xxx` to access the value of a argument.
+
+    Args:
+        cls: A user defined class that has only key / value pairs as attributes, see example.
+
+    .. code-block:: python
+
+        import pytorch_tao as tao
+
+        @tao.arguments
+        class _args:
+            max_epochs: int = tao.arg(default=10)
+            batch_size: int = tao.arg(
+                default=128, tune=CategoricalDistribution([32, 64, 128, 256])
+            )
+            lr: float = tao.arg(default=3e-4, tune=FloatDistribution(low=3e-4, high=3e-2))
+
+        print("max_epochs: ", tao.args.max_epochs)
+        print("batch_size: ", tao.args.batch_size)
+        print("learning_rate: ", tao.args.lr)
     """
     argset = _ArgSet()
     parser = argparse.ArgumentParser(description="PyTorch Tao")
