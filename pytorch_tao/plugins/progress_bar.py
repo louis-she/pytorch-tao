@@ -26,6 +26,41 @@ logger = logging.getLogger(__name__)
 
 
 class ProgressBar(BasePlugin):
+    """Print training or evaluation progress in terminal.
+    If `psutil` and `pynvml` has installed, will also print cpu, memory
+    and gpu memory usage.
+
+    Args:
+        fields: the fields value to print
+        hardware: whether to print hardware usage
+        interval: interation interval to do the pring
+
+    ..  list-table:: Hooks
+        :header-rows: 1
+
+        * - Hook Point
+          - Logic
+        * - EPOCH_STARTED
+          - create a new tqdm instance
+        * - ITERATION_COMPLETED(every=interval)
+          - print to the output
+
+    .. code-block:: python
+
+        import pytorch_tao as tao
+        from pytorch_tao.plugin import ProgressBar
+
+        model = ...
+        trainer = tao.Trainer()
+
+        @trainer.train()
+        def _train(images, targets):
+            logits = model(images)
+            loss = F.cross_entropy(logits, targets)
+            return {"loss": loss}
+
+        trainer.use(ProgressBar("loss"), at="train")
+    """
     def __init__(self, *fields: Tuple[str], hardware: bool = True, interval: int = 1):
         super().__init__()
         self.fields = fields
