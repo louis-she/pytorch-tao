@@ -61,6 +61,7 @@ class ProgressBar(BasePlugin):
 
         trainer.use(ProgressBar("loss"), at="train")
     """
+
     def __init__(self, *fields: Tuple[str], hardware: bool = True, interval: int = 1):
         super().__init__()
         self.fields = fields

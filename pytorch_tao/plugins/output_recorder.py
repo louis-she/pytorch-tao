@@ -45,6 +45,7 @@ class OutputRecorder(BasePlugin):
 
         trainer.use(OutputRecorder("loss"), at="train")
     """
+
     def __init__(self, *fields: List[str]):
         super().__init__()
         self.fields = fields

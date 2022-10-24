@@ -1,5 +1,4 @@
 import argparse
-from collections import OrderedDict
 import json
 import logging
 import sys

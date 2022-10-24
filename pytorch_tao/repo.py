@@ -7,8 +7,8 @@ from tempfile import mkdtemp
 from typing import Dict, Tuple, Union
 
 import git
-import optuna
 import jinja2
+import optuna
 from torch.distributed.run import run
 
 import pytorch_tao as tao
@@ -27,6 +27,7 @@ class Repo:
     Args:
         path: path of the repo.
     """
+
     def __init__(self, path: Union[Path, str]):
         if isinstance(path, str):
             path = Path(path)
@@ -76,7 +77,9 @@ class Repo:
             return
         file_path.parent.mkdir(parents=True, exist_ok=True)
         try:
-            content = core.render_tpl(f"projects/{proj_name}/{file_name}", **context_vars)
+            content = core.render_tpl(
+                f"projects/{proj_name}/{file_name}", **context_vars
+            )
         except jinja2.exceptions.TemplateNotFound:
             content = core.render_tpl(f"projects/default/{file_name}", **context_vars)
         file_path.write_text(content)

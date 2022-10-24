@@ -48,7 +48,8 @@ More example can be found in tests.
 
 cfg: Any = None
 """
-Object that hold all the config reading from config file(by default :code:`.tao/cfg.py`). We can access the config with :code:`tao.cfg.xxx`.
+Object that hold all the config reading from config file(by default :code:`.tao/cfg.py`).
+We can access the config with :code:`tao.cfg.xxx`.
 """
 
 tracker = Tracker()

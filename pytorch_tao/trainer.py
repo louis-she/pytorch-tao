@@ -226,6 +226,7 @@ class Trainer:
             trainer.use(Metric("accuracy", Accuracy(lambda: logits, targets: logits > 0, targets)))
             trainer.use(Metric("roc_auc", ROC_AUC(lambda: logits, targets: torch.sigmoid(logits), targets)))
         """
+
         def decorator(func: Callable):
             @torch.autocast(self.device.type, enabled=amp)
             @torch.set_grad_enabled(False)

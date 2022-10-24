@@ -35,6 +35,7 @@ class Checkpoint(ValPlugin):
         # save the top-3 models of accuracy
         trainer.use(Checkpoint("accuracy", {"model": model}))
     """
+
     def __init__(self, metric_name: str, objects: Dict, score_sign: int = 1, n_saved=3):
         self.metric_name = metric_name
         self.objects = objects

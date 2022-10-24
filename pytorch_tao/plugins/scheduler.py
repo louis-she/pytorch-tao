@@ -33,6 +33,7 @@ class Scheduler(base.TrainPlugin):
         trainer = tao.Trainer()
         trainer.use(Scheduler(StepLR(optimizer, step_size=30)))
     """
+
     def __init__(self, torch_scheduler: torch.optim.lr_scheduler._LRScheduler):
         super().__init__()
         self._scheduler = torch_scheduler
