@@ -31,7 +31,7 @@ logging.captureWarnings(True)
 
 args: _ArgSet = None
 """
-`tao.args` contains the value of arguments defined with `tao.Arguments`, access them like `tao.args.xxx`.
+``tao.args`` contains the value of arguments defined with ``tao.arguments``, access them like ``tao.args.xxx``.
 
 ..  code-block:: python
 
@@ -46,24 +46,9 @@ More example can be found in tests.
 
 """
 
-study: Study = None
-"""
-:py:class:`optuna:optuna.study.Study` object which can be used in tune mode.
-"""
-
-trial: Trial = None
-"""
-:py:class:`optuna:optuna.trial.Trial` object which can be used in tune mode.
-"""
-
 cfg: Any = None
 """
 Object that hold all the config reading from config file(by default :code:`.tao/cfg.py`). We can access the config with :code:`tao.cfg.xxx`.
-"""
-
-repo: Repo = None
-"""
-:py:class:`pytorch_tao.repo.Repo` object that represent current code executing repo.
 """
 
 tracker = Tracker()
@@ -85,6 +70,26 @@ tune: bool = False
 """
 boolean that indicates if current run is in tune mode.
 """
+
+repo: Repo = None
+"""
+:py:class:`pytorch_tao.repo.Repo` object that represent current code executing repo.
+
+.. note::
+    Normally this variable is only used by **Tao** internally or plugins.
+
+"""
+
+study: Study = None
+"""
+:py:class:`optuna:optuna.study.Study` object which can be used in tune mode.
+"""
+
+trial: Trial = None
+"""
+:py:class:`optuna:optuna.trial.Trial` object which can be used in tune mode.
+"""
+
 
 init_from_env()
 

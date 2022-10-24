@@ -1,5 +1,5 @@
-Plugins
-=======================================
+plugins
+=======
 
 .. currentmodule:: pytorch_tao.plugins
 

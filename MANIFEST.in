@@ -1,3 +1,3 @@
-recursive-include requirements
-recursive-include pytorch_tao/templates
+recursive-include requirements *.txt
+recursive-include pytorch_tao/templates *.jinja
 include readme.md

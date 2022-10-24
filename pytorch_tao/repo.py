@@ -8,6 +8,7 @@ from typing import Dict, Tuple, Union
 
 import git
 import optuna
+import jinja2
 from torch.distributed.run import run
 
 import pytorch_tao as tao
@@ -50,21 +51,35 @@ class Repo:
     def init(self):
         """Making a existing folder a tao repo"""
         self.tao_path.mkdir(exist_ok=False)
-        config_content = core.render_tpl(
-            "cfg.py",
+        self._create_proj_from_template()
+        self.git = git.Repo.init(self.path)
+        self.commit_all("initial commit")
+        self._load_cfg()
+
+    def _create_proj_from_template(self, proj_name="mini"):
+        # TODO: make templates and add --template for
+        #       tao new command
+        self._create_proj_file(proj_name, ".gitignore")
+        self._create_proj_file(
+            proj_name,
+            ".tao/cfg.py",
             name=self.name,
             path=self.path.resolve().as_posix(),
             run_dir=(self.tao_path / "runs").resolve().as_posix(),
             log_dir=(self.path / "log").resolve().as_posix(),
         )
-        self.cfg_path.write_text(config_content)
-        gitignore_content = core.render_tpl("gitignore")
-        (self.path / ".gitignore").write_text(gitignore_content)
+        self._create_proj_file(proj_name, "main.py")
 
-        self.git = git.Repo.init(self.path)
-        self.git.git.add(all=True)
-        self.git.index.commit("initial commit")
-        self._load_cfg()
+    def _create_proj_file(self, proj_name: str, file_name: str, **context_vars):
+        file_path = self.path / file_name
+        if (self.path / file_name).exists():
+            return
+        file_path.parent.mkdir(parents=True, exist_ok=True)
+        try:
+            content = core.render_tpl(f"projects/{proj_name}/{file_name}", **context_vars)
+        except jinja2.exceptions.TemplateNotFound:
+            content = core.render_tpl(f"projects/default/{file_name}", **context_vars)
+        file_path.write_text(content)
 
     def commit_all(self, message: str):
         """Commit all the dirty changes to git

@@ -1,5 +1,5 @@
-Trackers
-=======================================
+trackers
+========
 
 .. currentmodule:: pytorch_tao.trackers
 

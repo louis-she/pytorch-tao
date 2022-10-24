@@ -1,0 +1,34 @@
+import pytorch_tao as tao
+import torch
+
+# 1. define the parameters
+@tao.arguments
+class _:
+    max_epochs: int = tao.arg(default=20)
+
+# 2. Create the necessary pytorch components
+device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
+train_loader = ...
+val_loader = ...
+model = ...
+optimizer = ...
+
+# 3. Create trainer and train / val forward functions
+trainer = tao.Trainer(
+    device=device,
+    model=model,
+    optimizer=optimizer,
+    train_loader=train_loader,
+    val_loader=val_loader,
+)
+
+@trainer.train()
+def _train(*args, **kwargs):
+    ...
+
+@trainer.eval()
+def _eval(*args, **kwargs):
+    ...
+
+# 4. start to train
+trainer.fit(max_epochs=tao.args.max_epochs)
