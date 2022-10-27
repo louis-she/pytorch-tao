@@ -11,7 +11,7 @@ import pytorch_tao as tao
 from ignite.engine import CallableEventWithFilter, Events
 
 from pytorch_tao import core
-from pytorch_tao.exceptions import DirtyRepoError, ConfigMissingError
+from pytorch_tao.exceptions import ConfigMissingError, DirtyRepoError
 
 
 def test_ensure_config(test_repo: tao.Repo):
@@ -138,9 +138,7 @@ def test_dispatch_run(test_repo: tao.Repo):
     sys.argv = ["tao", "run", (test_repo.path / "scripts" / "train.py").as_posix()]
     args = core.parse_tao_args()
     assert args.tao_cmd == "run"
-    assert (
-        args.training_script == (test_repo.path / "scripts" / "train.py").as_posix()
-    )
+    assert args.training_script == (test_repo.path / "scripts" / "train.py").as_posix()
 
     with pytest.raises(
         DirtyRepoError,
@@ -153,9 +151,7 @@ def test_dispatch_tune(test_repo: tao.Repo):
     sys.argv = ["tao", "tune", (test_repo.path / "scripts" / "train.py").as_posix()]
     args = core.parse_tao_args()
     assert args.tao_cmd == "tune"
-    assert (
-        args.training_script == (test_repo.path / "scripts" / "train.py").as_posix()
-    )
+    assert args.training_script == (test_repo.path / "scripts" / "train.py").as_posix()
 
     with pytest.raises(
         DirtyRepoError, match="`tao tune` requires the repo to be clean"

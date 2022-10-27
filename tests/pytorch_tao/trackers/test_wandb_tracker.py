@@ -3,9 +3,9 @@ from unittest.mock import DEFAULT, patch
 
 import pytest
 import pytorch_tao as tao
-from pytorch_tao import exceptions
 import torch
 import wandb
+from pytorch_tao import exceptions
 from pytorch_tao.trackers.wandb_tracker import WandbTracker
 
 

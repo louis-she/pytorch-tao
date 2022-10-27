@@ -16,4 +16,3 @@ class ConfigMissingError(Exception):
         super().__init__(
             f"Config keys {self.missing_keys} must be present for calling {func.__name__}"
         )
-

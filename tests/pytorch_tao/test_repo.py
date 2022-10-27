@@ -140,7 +140,10 @@ def test_run_clean_repo(test_repo: tao.Repo):
 
 
 def test_run_commit(test_repo: tao.Repo):
-    sys.argv = f"tao run --commit some_comments {(test_repo.path / 'scripts' / 'train.py').as_posix()} --test --epochs 10".split(" ")
+    sys.argv = (
+        f"tao run --commit some_comments {(test_repo.path / 'scripts' / 'train.py').as_posix()} "
+        "--test --epochs 10".split(" ")
+    )
     args = core.parse_tao_args()
     test_repo.run(args.tao_commit, args.tao_dirty, args.tao_checkout)
     assert not test_repo.git.is_dirty()
@@ -174,7 +177,9 @@ def test_tune(test_repo_for_tune: tao.Repo):
         f"{(test_repo_for_tune.path / 'main.py').as_posix()}"
     ).split(" ")
     args = core.parse_tao_args()
-    test_repo_for_tune.tune(args.tao_tune_name, args.tao_tune_max_trials, args.tao_tune_duplicated)
+    test_repo_for_tune.tune(
+        args.tao_tune_name, args.tao_tune_max_trials, args.tao_tune_duplicated
+    )
     study = optuna.load_study(
         study_name="test_tune",
         storage=f"sqlite:////{(test_repo_for_tune.tao_path / 'study.db').as_posix()}",
@@ -183,7 +188,10 @@ def test_tune(test_repo_for_tune: tao.Repo):
 
 
 def test_create_repo_with_empty_template(tempdir: Path):
-    with pytest.raises(exceptions.TemplateNotFound, match="Template xxx not found, valid templates are "):
+    with pytest.raises(
+        exceptions.TemplateNotFound,
+        match="Template xxx not found, valid templates are ",
+    ):
         tao.Repo.create(tempdir / "new_repo", "xxx")
 
 
@@ -248,4 +256,3 @@ def test_prepare_wd(tempdir: Path):
     assert (path / "main.py").read_text() == "new_text_in_branch"
     assert (tao.cfg.run_dir / branch_commit.hexsha[:8]) == path
     assert repo.git.rev_parse("HEAD").hexsha[:8] == new_hash
-

@@ -212,7 +212,11 @@ def parse_tao_args(args: str = None):
     )
 
     new_parser.add_argument(
-        "--template", type=str, dest="tao_template", help="Template to init the new project", default="mini",
+        "--template",
+        type=str,
+        dest="tao_template",
+        help="Template to init the new project",
+        default="mini",
     )
     new_parser.add_argument("path", type=str, help="Path of this new project")
 
@@ -222,7 +226,11 @@ def parse_tao_args(args: str = None):
     )
 
     init_parser.add_argument(
-        "--template", type=str, dest="tao_template", help="Template to init the new project", default="mini",
+        "--template",
+        type=str,
+        dest="tao_template",
+        help="Template to init the new project",
+        default="mini",
     )
 
     init_parser.add_argument(
@@ -277,7 +285,9 @@ def dispatch(args: argparse.Namespace):
     def _tune():
         tao.repo = tao.Repo.find_by_file(args.training_script)
         tao.load_cfg(tao.repo.cfg_path)
-        tao.repo.tune(args.tao_tune_name, args.tao_tune_max_trials, args.tao_tune_duplicated)
+        tao.repo.tune(
+            args.tao_tune_name, args.tao_tune_max_trials, args.tao_tune_duplicated
+        )
 
     _cmd = {
         "run": _run,

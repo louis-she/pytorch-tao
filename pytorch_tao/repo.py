@@ -1,7 +1,6 @@
-from argparse import ArgumentError
 import os
 import shutil
-from copy import copy
+from argparse import ArgumentError
 from datetime import datetime
 from pathlib import Path
 from tempfile import mkdtemp
@@ -196,7 +195,7 @@ class Repo:
         return hexsha
 
     @core.ensure_config("run_dir")
-    def run(self,  commit: str, dirty: bool, checkout: "str"):
+    def run(self, commit: str, dirty: bool, checkout: "str"):
         """Start a training process.
 
         Run will call :code:`torch.distributed.run` so this func will rely on the
