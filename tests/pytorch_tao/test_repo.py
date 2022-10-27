@@ -1,5 +1,7 @@
 import json
 import os
+import shutil
+import sys
 import tempfile
 from pathlib import Path
 from unittest.mock import MagicMock
@@ -8,7 +10,7 @@ import optuna
 
 import pytest
 import pytorch_tao as tao
-from pytorch_tao import core
+from pytorch_tao import core, exceptions
 
 
 def test_create_repo():
@@ -71,12 +73,12 @@ def test_sync_code_to_kaggle(test_repo: tao.Repo):
 
 
 def test_run_dirty(test_repo: tao.Repo):
-    with pytest.raises(tao.DirtyRepoError):
+    with pytest.raises(exceptions.DirtyRepoError):
         command = f"run {(test_repo.path / 'scripts' / 'train.py').as_posix()} --test --epochs 10".split(
             " "
         )
-        core.parse_tao_args(command)
-        test_repo.run()
+        args = core.parse_tao_args(command)
+        test_repo.run(args.tao_commit, args.tao_dirty, args.tao_checkout)
 
 
 def option_value(argv, option):
@@ -84,11 +86,11 @@ def option_value(argv, option):
 
 
 def test_run_with_dirty_option(test_repo: tao.Repo):
-    command = f"run --dirty {(test_repo.path / 'scripts' / 'train.py').as_posix()} --test --epochs 10".split(
+    sys.argv = f"tao run --dirty {(test_repo.path / 'scripts' / 'train.py').as_posix()} --test --epochs 10".split(
         " "
     )
-    core.parse_tao_args(command)
-    test_repo.run()
+    args = core.parse_tao_args()
+    test_repo.run(args.tao_commit, args.tao_dirty, args.tao_checkout)
     with (test_repo.path / "result.json").open("r") as f:
         result = json.load(f)
 
@@ -112,12 +114,11 @@ def test_run_clean_repo(test_repo: tao.Repo):
     test_repo.git.git.add(all=True)
     test_repo.git.index.commit("clean dirty")
 
-    command = (
-        f"run {(test_repo.path / 'scripts' / 'train.py').as_posix()} --test --epochs 10"
-    )
-    command = command.split(" ")
-    core.parse_tao_args(command)
-    test_repo.run()
+    sys.argv = (
+        f"tao run {(test_repo.path / 'scripts' / 'train.py').as_posix()} --test --epochs 10"
+    ).split(" ")
+    args = core.parse_tao_args()
+    test_repo.run(args.tao_commit, args.tao_dirty, args.tao_checkout)
 
     hash = test_repo.git.head.ref.commit.hexsha[:8]
     run_dir = test_repo.path / "runs" / hash
@@ -139,22 +140,20 @@ def test_run_clean_repo(test_repo: tao.Repo):
 
 
 def test_run_commit(test_repo: tao.Repo):
-    command = f"run --commit some_comments {(test_repo.path / 'scripts' / 'train.py').as_posix()} --test --epochs 10"
-    command = command.split(" ")
-    core.parse_tao_args(command)
-    test_repo.run()
+    sys.argv = f"tao run --commit some_comments {(test_repo.path / 'scripts' / 'train.py').as_posix()} --test --epochs 10".split(" ")
+    args = core.parse_tao_args()
+    test_repo.run(args.tao_commit, args.tao_dirty, args.tao_checkout)
     assert not test_repo.git.is_dirty()
     assert test_repo.git.head.ref.commit.message == "some_comments"
 
 
 def test_run_with_arguments(test_repo_with_arguments: tao.Repo):
-    command = (
-        f"run {(test_repo_with_arguments.path / 'main.py').as_posix()} "
+    sys.argv = (
+        f"tao run {(test_repo_with_arguments.path / 'main.py').as_posix()} "
         f"--trial_name test --max_epochs 10 --train_folds 1 2 3"
-    )
-    command = command.split(" ")
-    core.parse_tao_args(command)
-    test_repo_with_arguments.run()
+    ).split(" ")
+    args = core.parse_tao_args()
+    test_repo_with_arguments.run(args.tao_commit, args.tao_dirty, args.tao_checkout)
 
     hash = test_repo_with_arguments.git.head.ref.commit.hexsha[:8]
     run_dir = test_repo_with_arguments.path / ".tao" / "runs" / hash
@@ -170,15 +169,83 @@ def test_run_with_arguments(test_repo_with_arguments: tao.Repo):
 
 
 def test_tune(test_repo_for_tune: tao.Repo):
-    command = (
-        "tune --name test_tune --max_trials 10 "
+    sys.argv = (
+        "tao tune --name test_tune --max_trials 10 "
         f"{(test_repo_for_tune.path / 'main.py').as_posix()}"
-    )
-    command = command.split(" ")
-    core.parse_tao_args(command)
-    test_repo_for_tune.tune()
+    ).split(" ")
+    args = core.parse_tao_args()
+    test_repo_for_tune.tune(args.tao_tune_name, args.tao_tune_max_trials, args.tao_tune_duplicated)
     study = optuna.load_study(
-        study_name="tune_test_tune",
+        study_name="test_tune",
         storage=f"sqlite:////{(test_repo_for_tune.tao_path / 'study.db').as_posix()}",
     )
     assert len(study.trials) == 10
+
+
+def test_create_repo_with_empty_template(tempdir: Path):
+    with pytest.raises(exceptions.TemplateNotFound, match="Template xxx not found, valid templates are "):
+        tao.Repo.create(tempdir / "new_repo", "xxx")
+
+
+def test_create_repo_with_default_template(tempdir: Path):
+    tao.Repo.create(tempdir / "new_repo")
+    first_line = Path(tempdir / "new_repo" / "main.py").read_text().split("\n")[0]
+    assert "mini" in first_line
+    assert "cifar10" not in first_line
+
+
+def test_create_repo_with_cifar10_template(tempdir: Path):
+    tao.Repo.create(tempdir / "new_repo", "cifar10")
+    first_line = Path(tempdir / "new_repo" / "main.py").read_text().split("\n")[0]
+
+    assert "cifar10" in first_line
+    assert "mini" not in first_line
+
+
+def test_prepare_wd(tempdir: Path):
+    repo_path = tempdir / "test_repo"
+    repo = tao.Repo.create(repo_path)
+
+    # make a init commit
+    (repo.path / "main.py").write_text("init_text")
+    init_commit = repo.commit_all("init commit")
+
+    init_hash = init_commit.hexsha[:8]
+    path = repo._prepare_wd()
+    assert (path / "main.py").read_text() == "init_text"
+    assert (tao.cfg.run_dir / init_hash) == path
+    shutil.rmtree(path)
+
+    # make commit
+    (repo.path / "main.py").write_text("new_text")
+    assert repo.is_dirty()
+    new_commit = repo.commit_all("commit 2")
+    new_hash = new_commit.hexsha[:8]
+    path = repo._prepare_wd()
+    assert (path / "main.py").read_text() == "new_text"
+    assert (tao.cfg.run_dir / new_hash) == path
+    shutil.rmtree(path)
+
+    # add a tag
+    assert repo.git.rev_parse("HEAD").hexsha[:8] == new_hash
+    tag = "init_tag"
+    repo.git.create_tag(tag, init_hash)
+    path = repo._prepare_wd(tag)
+    assert (path / "main.py").read_text() == "init_text"
+    assert (tao.cfg.run_dir / init_hash) == path
+    shutil.rmtree(path)
+    assert repo.git.rev_parse("HEAD").hexsha[:8] == new_hash
+
+    # create a branch and a commit in that branch
+    assert repo.git.rev_parse("HEAD").hexsha[:8] == new_hash
+    branch_name = "new_branch"
+    repo.git.git.checkout("-b", branch_name)
+    (repo.path / "main.py").write_text("new_text_in_branch")
+    assert repo.is_dirty()
+    branch_commit = repo.commit_all("commit in branch")
+    repo.git.git.checkout("master")
+    path = repo._prepare_wd(branch_name)
+    assert (path / "main.py").read_text() == "new_text_in_branch"
+    assert (tao.cfg.run_dir / branch_commit.hexsha[:8]) == path
+    assert repo.git.rev_parse("HEAD").hexsha[:8] == new_hash
+

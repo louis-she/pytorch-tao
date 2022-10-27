@@ -11,7 +11,7 @@ import pytorch_tao as tao
 from ignite.engine import CallableEventWithFilter, Events
 
 from pytorch_tao import core
-from pytorch_tao.repo import DirtyRepoError
+from pytorch_tao.exceptions import DirtyRepoError, ConfigMissingError
 
 
 def test_ensure_config(test_repo: tao.Repo):
@@ -19,7 +19,7 @@ def test_ensure_config(test_repo: tao.Repo):
     def read_colab_drive_file():
         return True
 
-    with pytest.raises(tao.ConfigMissingError) as e:
+    with pytest.raises(ConfigMissingError) as e:
         read_colab_drive_file()
         assert e.missing_keys == {"mount_drive"}
         assert e.func.__name__ == "read_colab_drive_file"
@@ -134,39 +134,33 @@ def test_init_from_env_tao_tune(test_repo: tao.Repo):
     )
 
 
-def test_dispatch_args_none(test_repo):
-    sys.argv = ["tao", "run", (test_repo.path / "scripts" / "train.py").as_posix()]
-    with pytest.raises(RuntimeError, match="Should parse args before dispatch"):
-        core.dispatch()
-
-
 def test_dispatch_run(test_repo: tao.Repo):
     sys.argv = ["tao", "run", (test_repo.path / "scripts" / "train.py").as_posix()]
-    core.parse_tao_args()
-    assert tao.args.tao_cmd == "run"
+    args = core.parse_tao_args()
+    assert args.tao_cmd == "run"
     assert (
-        tao.args.training_script == (test_repo.path / "scripts" / "train.py").as_posix()
+        args.training_script == (test_repo.path / "scripts" / "train.py").as_posix()
     )
 
     with pytest.raises(
         DirtyRepoError,
         match="`tao run` requires the repo to be clean, or use `tao run --dirty` to run in dirty mode",
     ):
-        core.dispatch()
+        core.dispatch(args)
 
 
 def test_dispatch_tune(test_repo: tao.Repo):
     sys.argv = ["tao", "tune", (test_repo.path / "scripts" / "train.py").as_posix()]
-    core.parse_tao_args()
-    assert tao.args.tao_cmd == "tune"
+    args = core.parse_tao_args()
+    assert args.tao_cmd == "tune"
     assert (
-        tao.args.training_script == (test_repo.path / "scripts" / "train.py").as_posix()
+        args.training_script == (test_repo.path / "scripts" / "train.py").as_posix()
     )
 
     with pytest.raises(
         DirtyRepoError, match="`tao tune` requires the repo to be clean"
     ):
-        core.dispatch()
+        core.dispatch(args)
 
 
 def test_dispatch_new():
@@ -174,10 +168,10 @@ def test_dispatch_new():
         path = Path(tmpdirname)
         project_path = path / "new_tao_project"
         sys.argv = ["tao", "new", project_path.as_posix()]
-        core.parse_tao_args()
-        assert tao.args.tao_cmd == "new"
-        assert tao.args.path == project_path.as_posix()
-        core.dispatch()
+        args = core.parse_tao_args()
+        assert args.tao_cmd == "new"
+        assert args.path == project_path.as_posix()
+        core.dispatch(args)
 
         assert project_path.exists()
         assert (project_path / ".tao" / "cfg.py").is_file()
@@ -189,10 +183,10 @@ def test_dispatch_init():
     with tempfile.TemporaryDirectory() as tmpdirname:
         path = Path(tmpdirname)
         sys.argv = ["tao", "init", path.as_posix()]
-        core.parse_tao_args()
-        assert tao.args.tao_cmd == "init"
-        assert tao.args.path == path.as_posix()
-        core.dispatch()
+        args = core.parse_tao_args()
+        assert args.tao_cmd == "init"
+        assert args.path == path.as_posix()
+        core.dispatch(args)
 
         assert (path / ".tao" / "cfg.py").is_file()
         assert (path / ".git").is_dir()

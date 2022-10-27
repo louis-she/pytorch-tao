@@ -3,6 +3,7 @@ from unittest.mock import DEFAULT, patch
 
 import pytest
 import pytorch_tao as tao
+from pytorch_tao import exceptions
 import torch
 import wandb
 from pytorch_tao.trackers.wandb_tracker import WandbTracker
@@ -10,7 +11,7 @@ from pytorch_tao.trackers.wandb_tracker import WandbTracker
 
 def test_wandb_tracker_init(test_repo):
     with pytest.raises(
-        tao.ConfigMissingError,
+        exceptions.ConfigMissingError,
         match="Config keys \\{'wandb_project'\\} must be present for calling __init__",
     ):
         WandbTracker("random_name")

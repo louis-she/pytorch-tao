@@ -15,14 +15,13 @@ from pytorch_tao.args import _ArgSet, arg, arguments
 
 from pytorch_tao.core import (
     ArgMissingError,
-    ConfigMissingError,
     ensure_arg,
     ensure_config,
     init_from_env,
     load_cfg,
     on,
 )
-from pytorch_tao.repo import DirtyRepoError, Repo
+from pytorch_tao.repo import Repo
 from pytorch_tao.trackers import set_tracker, Tracker
 from pytorch_tao.trainer import Trainer
 from pytorch_tao.tune import tell
@@ -101,7 +100,6 @@ __all__ = [
     "cfg",
     "ensure_config",
     "ensure_arg",
-    "ConfigMissingError",
     "ArgMissingError",
     "args",
     "study",

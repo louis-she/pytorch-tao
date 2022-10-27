@@ -13,6 +13,7 @@ from optuna import load_study
 from torch.distributed.run import get_args_parser
 
 import pytorch_tao as tao
+from pytorch_tao import exceptions
 
 
 _log_format = "[%(levelname).1s %(asctime)s] %(message)s"
@@ -101,15 +102,6 @@ def load_cfg(cfg_path: Path) -> Dict:
     del sys.modules[module_name]
 
 
-class ConfigMissingError(Exception):
-    def __init__(self, keys: List[str], func: Callable):
-        self.missing_keys = set(keys)
-        self.func = func
-        super().__init__(
-            f"Config keys {self.missing_keys} must be present for calling {func.__name__}"
-        )
-
-
 class ArgMissingError(Exception):
     def __init__(self, keys: List[str], func: Callable):
         self.missing_keys = set(keys)
@@ -151,7 +143,7 @@ def ensure_config(*keys):
                 if not hasattr(tao.cfg, key) or getattr(tao.cfg, key) is None
             ]
             if len(missing_keys) != 0:
-                raise ConfigMissingError(missing_keys, func)
+                raise exceptions.ConfigMissingError(missing_keys, func)
             return func(*args, **kwargs)
 
         return real
@@ -206,16 +198,31 @@ def parse_tao_args(args: str = None):
         help="Commit and run the code, it is equal to `git add -A; git commit -m xxx; tao run xxx`",
     )
 
+    run_parser.add_argument(
+        "--checkout",
+        type=str,
+        dest="tao_checkout",
+        default=None,
+        help="Run a specific commit(or branch or tag)",
+    )
+
     new_parser = subparsers.add_parser(
         "new",
         help="Create a tao project",
     )
 
+    new_parser.add_argument(
+        "--template", type=str, dest="tao_template", help="Template to init the new project", default="mini",
+    )
     new_parser.add_argument("path", type=str, help="Path of this new project")
 
     init_parser = subparsers.add_parser(
         "init",
         help="Init a tao project",
+    )
+
+    init_parser.add_argument(
+        "--template", type=str, dest="tao_template", help="Template to init the new project", default="mini",
     )
 
     init_parser.add_argument(
@@ -232,7 +239,7 @@ def parse_tao_args(args: str = None):
     tune_parser.add_argument(
         "--name",
         type=str,
-        dest="tao_name",
+        dest="tao_tune_name",
         help="Name of the this tune, also will be used as study name",
     )
     tune_parser.add_argument(
@@ -244,29 +251,33 @@ def parse_tao_args(args: str = None):
         dest="tao_tune_duplicated",
         help="Is this study name already used and want to resume?",
     )
+    tune_parser.add_argument(
+        "--checkout",
+        type=str,
+        dest="tao_tune_checkout",
+        default=None,
+        help="Tune a specific commit(or branch or tag)",
+    )
 
-    tao.args = parser.parse_args(args)
+    return parser.parse_args(args)
 
 
-def dispatch():
-    if tao.args is None:
-        raise RuntimeError("Should parse args before dispatch")
-
+def dispatch(args: argparse.Namespace):
     def _run():
-        tao.repo = tao.Repo.find_by_file(tao.args.training_script)
-        tao.repo.run()
+        tao.repo = tao.Repo.find_by_file(args.training_script)
+        tao.repo.run(args.tao_commit, args.tao_dirty, args.tao_checkout)
 
     def _new():
-        tao.Repo.create(tao.args.path)
+        tao.Repo.create(path=args.path, template=args.tao_template)
 
     def _init():
-        repo = tao.Repo(tao.args.path)
-        repo.init()
+        repo = tao.Repo(args.path)
+        repo.init(args.tao_template)
 
     def _tune():
-        tao.repo = tao.Repo.find_by_file(tao.args.training_script)
+        tao.repo = tao.Repo.find_by_file(args.training_script)
         tao.load_cfg(tao.repo.cfg_path)
-        tao.repo.tune()
+        tao.repo.tune(args.tao_tune_name, args.tao_tune_max_trials, args.tao_tune_duplicated)
 
     _cmd = {
         "run": _run,
@@ -275,7 +286,7 @@ def dispatch():
         "tune": _tune,
     }
 
-    _cmd[tao.args.tao_cmd]()
+    _cmd[args.tao_cmd]()
 
 
 def on(event: Callable):

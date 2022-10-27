@@ -1,3 +1,4 @@
+from argparse import ArgumentError
 import os
 import shutil
 from copy import copy
@@ -12,11 +13,7 @@ import optuna
 from torch.distributed.run import run
 
 import pytorch_tao as tao
-from pytorch_tao import core
-
-
-class DirtyRepoError(Exception):
-    """Raised if action need clean repo but it is not"""
+from pytorch_tao import core, exceptions
 
 
 class Repo:
@@ -49,17 +46,24 @@ class Repo:
     def _load_git(self):
         self.git = git.Repo(self.path)
 
-    def init(self):
+    def init(self, template: str):
         """Making a existing folder a tao repo"""
-        self.tao_path.mkdir(exist_ok=False)
-        self._create_proj_from_template()
+        try:
+            self._create_proj_from_template(template)
+        except jinja2.exceptions.TemplateNotFound:
+            valid_templates = os.listdir(
+                os.path.join(os.path.dirname(__file__), "templates", "projects")
+            )
+            valid_templates.remove("default")
+            raise exceptions.TemplateNotFound(
+                f"Template {template} not found, valid templates are {', '.join(valid_templates)}"
+            )
+        self.tao_path.mkdir(exist_ok=True)
         self.git = git.Repo.init(self.path)
         self.commit_all("initial commit")
         self._load_cfg()
 
     def _create_proj_from_template(self, proj_name="mini"):
-        # TODO: make templates and add --template for
-        #       tao new command
         self._create_proj_file(proj_name, ".gitignore")
         self._create_proj_file(
             proj_name,
@@ -84,7 +88,7 @@ class Repo:
             content = core.render_tpl(f"projects/default/{file_name}", **context_vars)
         file_path.write_text(content)
 
-    def commit_all(self, message: str):
+    def commit_all(self, message: str) -> git.Commit:
         """Commit all the dirty changes to git
         It is equal to :code:`git add -A; git commit -m xxx`
 
@@ -92,7 +96,7 @@ class Repo:
             message: the message of `git commit`
         """
         self.git.git.add(all=True)
-        self.git.index.commit(message)
+        return self.git.index.commit(message)
 
     def exists(self) -> bool:
         """Is this tao repo exists and valid
@@ -109,7 +113,7 @@ class Repo:
 
             main_process_env = dict(os.environ)
             os.environ.update(env)
-            args = copy(tao.args)
+            args = core.parse_tao_args()
             for arg in exclude_args:
                 delattr(args, arg)
             run(args)
@@ -118,15 +122,30 @@ class Repo:
             os.environ.clear()
             os.environ.update(main_process_env)
 
-    def _prepare_wd(self):
-        hexsha = self.git.head.ref.commit.hexsha[:8]
+    def _prepare_wd(self, checkout: str = None) -> Path:
+        if self.git.is_dirty(untracked_files=True):
+            raise exceptions.DirtyRepoError(
+                "`tao run` requires the repo to be clean, "
+                "or use `tao run --dirty` to run in dirty mode"
+            )
+        if checkout:
+            try:
+                current_pos = self.git.active_branch.name
+            except TypeError:
+                current_pos = self.git.rev_parse("HEAD")
+            self.git.git.checkout(checkout)
+            hexsha = self.git.rev_parse("HEAD").hexsha[:8]
+            self.git.git.checkout(current_pos)
+        else:
+            hexsha = self.git.head.ref.commit.hexsha[:8]
         wd = tao.cfg.run_dir / hexsha
         if not wd.exists():
             git.Repo.clone_from(self.path.as_posix(), wd.as_posix())
+            git.Repo(wd).git.checkout(hexsha)
         return wd
 
     @core.ensure_config("run_dir", "study_storage")
-    def tune(self):
+    def tune(self, name: str, max_trials: int, duplicated: bool):
         """Start hyperparameter tunning process.
 
         The `tao tune` interally call this function to start the tunning process.
@@ -138,31 +157,30 @@ class Repo:
             :class:`DirtyRepoError`: if repo is dirty
         """
         if self.git.is_dirty():
-            raise DirtyRepoError("`tao tune` requires the repo to be clean")
+            raise exceptions.DirtyRepoError("`tao tune` requires the repo to be clean")
         if tao.cfg.study_storage is None:
             raise ValueError("In memory study is not supported in tao")
-        tao_name = f"tune_{self._get_tao_name()}"
+        if not name:
+            name = self._gen_name()
         tao.study = optuna.create_study(
-            study_name=tao_name,
+            study_name=name,
             storage=tao.cfg.study_storage,
-            load_if_exists=tao.args.tao_tune_duplicated,
+            load_if_exists=duplicated,
             direction=tao.cfg.tune_direction,
         )
         wd = self._prepare_wd()
-        for _ in range(tao.args.tao_tune_max_trials or int(1e9)):
+        for _ in range(max_trials or int(1e9)):
             env = {
                 "TAO_COMMIT": self.git.head.ref.commit.hexsha,
-                "TAO_NAME": tao_name,
+                "TAO_NAME": name,
                 "TAO_TUNE": "1",
                 "TAO_RUN_AT": datetime.now().strftime("%m/%d/%Y, %H:%M:%S"),
                 "TAO_REPO": wd.as_posix(),
                 "PYTHONPATH": f'{wd.as_posix()}:{os.getenv("PYTHONPATH", "")}',
             }
-            self._torchrun(wd, env, ("tao_name", "tao_tune_duplicated"))
+            self._torchrun(wd, env, ("tao_tune_name", "tao_tune_duplicated"))
 
-    def _get_tao_name(self):
-        if tao.args.tao_name:
-            return tao.args.tao_name
+    def _gen_name(self) -> str:
         name = datetime.now().strftime("%m-%d_%H:%M")
         if not self.is_dirty():
             name = f"{name}_{self.head_hexsha(short=True)}"
@@ -178,36 +196,35 @@ class Repo:
         return hexsha
 
     @core.ensure_config("run_dir")
-    def run(self):
+    def run(self,  commit: str, dirty: bool, checkout: "str"):
         """Start a training process.
 
         Run will call :code:`torch.distributed.run` so this func will rely on the
         command line arguments. Call this method with right command line options.
 
         raises:
-            :class:`DirtyRepoError`: if --dirty is not passed and the repo is dirty
+            :class:`.DirtyRepoError`: if --dirty is not passed and the repo is dirty
         """
-        if tao.args.tao_commit:
+        if checkout and dirty:
+            raise ArgumentError("checkout and dirty can not be used at the same time")
+
+        if commit:
             self.git.git.add(all=True)
-            self.git.index.commit(tao.args.tao_commit)
-        if not tao.args.tao_dirty and self.git.is_dirty(untracked_files=True):
-            raise DirtyRepoError(
-                "`tao run` requires the repo to be clean, "
-                "or use `tao run --dirty` to run in dirty mode"
-            )
-        wd = self.path if tao.args.tao_dirty else self._prepare_wd()
+            self.git.index.commit(commit)
+
+        wd = self.path if dirty else self._prepare_wd(checkout)
         env = {
-            "TAO_NAME": self._get_tao_name(),
+            "TAO_NAME": self._gen_name(),
             "TAO_COMMIT": self.git.head.ref.commit.hexsha,
             "TAO_RUN_AT": datetime.now().strftime("%m/%d/%Y, %H:%M:%S"),
             "TAO_REPO": wd.as_posix(),
             "PYTHONPATH": f'{wd.as_posix()}:{os.getenv("PYTHONPATH", "")}',
             "TAO_DIRTY": "1" if self.is_dirty() else None,
         }
-        self._torchrun(wd, env, ("tao_dirty", "tao_cmd", "tao_commit"))
+        self._torchrun(wd, env, ("tao_dirty", "tao_cmd", "tao_commit", "tao_checkout"))
 
     @classmethod
-    def create(cls, path: Union[Path, str]) -> "Repo":
+    def create(cls, path: Union[Path, str], template: str = "mini") -> "Repo":
         """Create a tao project from scratch.
         :code:`tao new` internally call this method, it is equal to
         :code:`mkdir path; tao init path;`
@@ -221,7 +238,7 @@ class Repo:
         path = Path(path)
         path.mkdir(exist_ok=False)
         repo = cls(path)
-        repo.init()
+        repo.init(template)
         return repo
 
     @classmethod

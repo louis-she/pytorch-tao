@@ -213,6 +213,13 @@ def test_repo_with_arguments(render_tpl):
 
 
 @pytest.fixture(scope="function")
+def tempdir():
+    temp_dir = Path(tempfile.mkdtemp())
+    yield temp_dir
+    shutil.rmtree(temp_dir)
+
+
+@pytest.fixture(scope="function")
 def test_repo_for_tune(render_tpl):
     temp_dir = Path(tempfile.mkdtemp())
     repo_dir = temp_dir / "test_repo_for_tune"
