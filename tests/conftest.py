@@ -196,7 +196,7 @@ with (tao.repo.path / "result.json").open("w") as f:
     }, f)
 """
     )
-
+    tao.repo = repo
     yield repo
     shutil.rmtree(temp_dir)
 

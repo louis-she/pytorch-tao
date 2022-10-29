@@ -130,3 +130,37 @@ def test_arguments_with_wrong_type(empty_argv):
         "float, str, bool, List\\[int\\], List\\[float\\], List\\[str\\]",
     ):
         tao.arguments(_WrongTypeArgument_2)
+
+
+def test_arguments_dict(empty_argv):
+    sys.argv = (
+        "mock.py --d --f 1.1 2.2 3.3 --g hello world"
+    ).split(" ")
+    tao.arguments(_Argument)
+    args_dict = tao.args.dict()
+
+    assert args_dict["a"] is None
+    assert args_dict["d"]
+    assert args_dict["f"] == [1.1, 2.2, 3.3]
+
+
+def test_arguments_get_json(empty_argv):
+    sys.argv = (
+        "mock.py --d --f 1.1 2.2 3.3 --g hello world"
+    ).split(" ")
+    tao.arguments(_Argument)
+    args_json = tao.args.get_json()
+
+    assert '"a": null' in args_json
+    assert '"d": true' in args_json
+    assert '"f": [1.1, 2.2, 3.3]' in args_json
+
+
+def test_arguments_get_command(empty_argv):
+    sys.argv = (
+        "mock.py --d --f 1.1 2.2 3.3 --g hello world"
+    ).split(" ")
+    tao.arguments(_Argument)
+    args_command = tao.args.get_command()
+    assert args_command == '--d --f 1.1 2.2 3.3 --g hello world --h 1 ' \
+        '--i 1.1 --j hello --k --l 1 2 3 --m 1.1 2.2 3.3 --n hello world'

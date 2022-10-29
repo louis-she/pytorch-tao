@@ -15,7 +15,7 @@ from pytorch_tao.plugins import TrainPlugin
 from pytorch_tao.trackers.base import Tracker
 
 
-class WandbTracker(Tracker, TrainPlugin):
+class WandbTracker(Tracker):
     """Tracker with wandb"""
 
     @tao.ensure_config("wandb_project")

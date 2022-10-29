@@ -76,6 +76,21 @@ class _ArgSet:
     def get_json(self) -> str:
         return json.dumps({k: v.get() for k, v in self._args.items()})
 
+    def get_command(self) -> str:
+        ret = []
+        for k, v in self._args.items():
+            value = v.get()
+            if value is None:
+                continue
+            if isinstance(value, bool) and value:
+                ret.append(f"--{k}")
+                continue
+            if isinstance(value, list):
+                ret.append(f"--{k} {' '.join([str(x) for x in value])}")
+                continue
+            ret.append(f"--{k} {value}")
+        return " ".join(ret)
+
 
 def arg(default: Any, tune: BaseDistribution = None):
     return _Arg(default=default, distribution=tune)
