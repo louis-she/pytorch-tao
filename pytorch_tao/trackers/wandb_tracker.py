@@ -11,7 +11,6 @@ try:
 except ModuleNotFoundError:
     wandb = None
 
-from pytorch_tao.plugins import TrainPlugin
 from pytorch_tao.trackers.base import Tracker
 
 

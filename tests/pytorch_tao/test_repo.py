@@ -103,7 +103,7 @@ def test_run_with_dirty_option(test_repo: tao.Repo):
     )
 
     argv = result["argv"]
-    assert argv[0] == (test_repo.path / 'scripts' / 'train.py').as_posix()
+    assert argv[0] == (test_repo.path / "scripts" / "train.py").as_posix()
     assert "--test" in argv
     assert "--epochs" in argv
     assert "10" == option_value(argv, "--epochs")
@@ -132,7 +132,7 @@ def test_run_clean_repo(test_repo: tao.Repo):
         result = json.load(f)
 
     argv = result["argv"]
-    assert argv[0] == (test_repo.path / 'scripts' / 'train.py').as_posix()
+    assert argv[0] == (test_repo.path / "scripts" / "train.py").as_posix()
     assert "--dirty" not in argv
     assert result["some_lib_path"] == (run_dir / "some_lib.py").as_posix()
     assert (

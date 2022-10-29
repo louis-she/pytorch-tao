@@ -1,11 +1,12 @@
-import pytorch_tao as tao
-from pytorch_tao.plugins import TrainPlugin
-from ignite.engine import Events
 import sys
 
 from typing import Dict
 
 import numpy as np
+from ignite.engine import Events
+
+import pytorch_tao as tao
+from pytorch_tao.plugins import TrainPlugin
 
 
 class Tracker(TrainPlugin):

@@ -133,9 +133,7 @@ def test_arguments_with_wrong_type(empty_argv):
 
 
 def test_arguments_dict(empty_argv):
-    sys.argv = (
-        "mock.py --d --f 1.1 2.2 3.3 --g hello world"
-    ).split(" ")
+    sys.argv = ("mock.py --d --f 1.1 2.2 3.3 --g hello world").split(" ")
     tao.arguments(_Argument)
     args_dict = tao.args.dict()
 
@@ -145,9 +143,7 @@ def test_arguments_dict(empty_argv):
 
 
 def test_arguments_get_json(empty_argv):
-    sys.argv = (
-        "mock.py --d --f 1.1 2.2 3.3 --g hello world"
-    ).split(" ")
+    sys.argv = ("mock.py --d --f 1.1 2.2 3.3 --g hello world").split(" ")
     tao.arguments(_Argument)
     args_json = tao.args.get_json()
 
@@ -157,10 +153,10 @@ def test_arguments_get_json(empty_argv):
 
 
 def test_arguments_get_command(empty_argv):
-    sys.argv = (
-        "mock.py --d --f 1.1 2.2 3.3 --g hello world"
-    ).split(" ")
+    sys.argv = ("mock.py --d --f 1.1 2.2 3.3 --g hello world").split(" ")
     tao.arguments(_Argument)
     args_command = tao.args.get_command()
-    assert args_command == '--d --f 1.1 2.2 3.3 --g hello world --h 1 ' \
-        '--i 1.1 --j hello --k --l 1 2 3 --m 1.1 2.2 3.3 --n hello world'
+    assert (
+        args_command == "--d --f 1.1 2.2 3.3 --g hello world --h 1 "
+        "--i 1.1 --j hello --k --l 1 2 3 --m 1.1 2.2 3.3 --n hello world"
+    )
