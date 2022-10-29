@@ -33,6 +33,9 @@ jobs:
       run: black --check -v .
     - name: Test with pytest
       run: pytest --cov-report xml --cov=pytorch_tao
+    - name: Run mnist example
+      run: |
+        cd examples/mnist && tao init && tao run main.py --max_epochs 2
     - name: Report coverage
       uses: codecov/codecov-action@v3.1.1
       with:
