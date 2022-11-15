@@ -1,3 +1,4 @@
+import random
 from typing import Any
 
 import numpy as np
@@ -17,3 +18,17 @@ def item(scalar: Any):
         return scalar
     if isinstance(scalar, (torch.Tensor, np.ndarray)):
         return scalar.item()
+
+
+def seed_everything(seed):
+    if seed >= 10000:
+        raise ValueError("seed number should be less than 10000")
+    if torch.distributed.is_initialized():
+        rank = torch.distributed.get_rank()
+    else:
+        rank = 0
+    seed = (rank * 100000) + seed
+
+    torch.manual_seed(seed)
+    np.random.seed(seed)
+    random.seed(seed)

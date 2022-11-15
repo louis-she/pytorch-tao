@@ -32,10 +32,17 @@ class Metric(ValPlugin):
 
     __skip_tao_event__ = ["_metric"]
 
-    def __init__(self, name: str, metric: IMetric, tune=False):
+    def __init__(self, name: str, metric: IMetric, tune=False, direction="max"):
         self._metric = metric
         self.name = name
         self.tune = tune
+        self.direction = direction
+        if self.direction not in ("max", "min"):
+            raise ValueError("direction should be max or min")
+        if self.direction == "max":
+            self.best_score = -float("inf")
+        else:
+            self.best_score = float("inf")
 
     def attach(self, engine: Engine):
         self._metric.attach(engine, self.name)
@@ -43,12 +50,15 @@ class Metric(ValPlugin):
 
     @tao.on(Events.EPOCH_COMPLETED)
     def _track(self, engine: Engine):
+        score = engine.state.metrics[self.name]
         logger.info(f"metric {self.name}: {engine.state.metrics[self.name]}")
         tao.tracker.add_points({self.name: engine.state.metrics[self.name]})
+        if (self.direction == "max" and score > self.best_score) or (
+            self.direction == "min" and score < self.best_score
+        ):
+            self.best_score = score
+        tao.tracker.add_points(
+            {self.name: score, f"best_of_{self.name}": self.best_score}
+        )
         if self.tune and tao.trial is not None:
-            tao.trial.report(engine.state.metrics[self.name], engine.state.epoch)
-
-    @tao.on(Events.COMPLETED)
-    def _tell(self, engine: Engine):
-        if self.tune and tao.study is not None:
-            tao.tell(engine.state.metrics[self.name])
+            tao.trial.report(engine.state.metrics[self.name], self.trainer.state.epoch)

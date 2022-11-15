@@ -78,7 +78,7 @@ def test_run_dirty(test_repo: tao.Repo):
             " "
         )
         args = core.parse_tao_args(command)
-        test_repo.run(args.tao_commit, args.tao_dirty, args.tao_checkout)
+        test_repo.run(None, args.tao_dirty, args.tao_checkout)
 
 
 def option_value(argv, option):
@@ -90,7 +90,7 @@ def test_run_with_dirty_option(test_repo: tao.Repo):
         " "
     )
     args = core.parse_tao_args()
-    test_repo.run(args.tao_commit, args.tao_dirty, args.tao_checkout)
+    test_repo.run(None, args.tao_dirty, args.tao_checkout)
     with (test_repo.path / "result.json").open("r") as f:
         result = json.load(f)
 
@@ -119,7 +119,7 @@ def test_run_clean_repo(test_repo: tao.Repo):
         f"tao run {(test_repo.path / 'scripts' / 'train.py').as_posix()} --test --epochs 10"
     ).split(" ")
     args = core.parse_tao_args()
-    test_repo.run(args.tao_commit, args.tao_dirty, args.tao_checkout)
+    test_repo.run(None, args.tao_dirty, args.tao_checkout)
 
     hash = test_repo.git.head.ref.commit.hexsha[:8]
     run_dir = test_repo.path / "runs" / hash
@@ -141,24 +141,13 @@ def test_run_clean_repo(test_repo: tao.Repo):
     )
 
 
-def test_run_commit(test_repo: tao.Repo):
-    sys.argv = (
-        f"tao run --commit some_comments {(test_repo.path / 'scripts' / 'train.py').as_posix()} "
-        "--test --epochs 10".split(" ")
-    )
-    args = core.parse_tao_args()
-    test_repo.run(args.tao_commit, args.tao_dirty, args.tao_checkout)
-    assert not test_repo.git.is_dirty()
-    assert test_repo.git.head.ref.commit.message == "some_comments"
-
-
 def test_run_with_arguments(test_repo_with_arguments: tao.Repo):
     sys.argv = (
         f"tao run {(test_repo_with_arguments.path / 'main.py').as_posix()} "
         f"--trial_name test --max_epochs 10 --train_folds 1 2 3"
     ).split(" ")
     args = core.parse_tao_args()
-    test_repo_with_arguments.run(args.tao_commit, args.tao_dirty, args.tao_checkout)
+    test_repo_with_arguments.run(None, args.tao_dirty, args.tao_checkout)
 
     hash = test_repo_with_arguments.git.head.ref.commit.hexsha[:8]
     run_dir = test_repo_with_arguments.path / ".tao" / "runs" / hash

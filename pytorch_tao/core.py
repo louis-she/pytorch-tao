@@ -191,14 +191,6 @@ def parse_tao_args(args: str = None):
     )
 
     run_parser.add_argument(
-        "--commit",
-        type=str,
-        dest="tao_commit",
-        default=None,
-        help="Commit and run the code, it is equal to `git add -A; git commit -m xxx; tao run xxx`",
-    )
-
-    run_parser.add_argument(
         "--checkout",
         type=str,
         dest="tao_checkout",
@@ -273,7 +265,7 @@ def parse_tao_args(args: str = None):
 def dispatch(args: argparse.Namespace):
     def _run():
         tao.repo = tao.Repo.find_by_file(args.training_script)
-        tao.repo.run(args.tao_commit, args.tao_dirty, args.tao_checkout)
+        tao.repo.run(args.tao_name, args.tao_dirty, args.tao_checkout)
 
     def _new():
         tao.Repo.create(path=args.path, template=args.tao_template)

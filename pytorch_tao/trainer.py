@@ -4,6 +4,7 @@ from typing import Any, Callable, Iterable, List
 import torch
 
 from ignite.engine import Engine, Events
+from ignite.engine.events import State
 
 from pytorch_tao import helper
 
@@ -69,6 +70,10 @@ class Trainer:
 
     def _do_eval(self):
         self.val_engine.run(self.val_loader)
+
+    @property
+    def state(self) -> State:
+        return self.train_engine.state
 
     def train(  # noqa: C901
         self,
@@ -288,6 +293,7 @@ class Trainer:
             plugin.attach(self.val_engine)
         else:
             raise ValueError("base plugin should maunally attach to engine")
+        plugin.trainer = self
 
     def fit(self, *, max_epochs: int):
         """Start the training and evaluation loop process.

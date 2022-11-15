@@ -94,6 +94,10 @@ trial: Trial = None
 init_from_env()
 
 
+def get_logger(name):
+    return logging.getLogger(f"pytorch_tao.{name}")
+
+
 __all__ = [
     "Repo",
     "load_cfg",
@@ -111,4 +115,5 @@ __all__ = [
     "on",
     "Trainer",
     "set_tracker",
+    "get_logger",
 ]

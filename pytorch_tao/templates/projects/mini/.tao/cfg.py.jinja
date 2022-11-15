@@ -1,0 +1,39 @@
+from pathlib import Path
+
+
+# default environment configs
+class default:
+    # tao run and log path
+    run_dir = Path("{{ run_dir }}")
+    log_dir = Path("{{ log_dir }}")
+
+    # It's highly recommended to add the path related options
+    # and use them in your code
+    #
+    # dataset_root = ...
+
+    # If you want to enable functions related with Kaggle
+    #
+    # (e.g. repo.sync_code_to_kaggle), config the following block.
+    # kaggle_username = ...
+    # kaggle_key = ...
+    # kaggle_code_dataset_id = ...
+
+    # tracker settings
+    #
+    # wandb_project = ...  # should be the name of your project
+    # wandb_api_key = ...  # visit https://wandb.ai/authorize to get the key
+                           # can skip this and use `wandb login` instead
+
+    # tune options
+    # study_storage = "sqlite:////{{ path }}/tune.db"
+    # tune_direction = "maximize"
+
+
+# add any other environments as you want, set TAO_ENV to switch
+# between environments.
+class colab(default):
+    """config for colab environment"""
+
+    # override default `dataset_root` option
+    # dataset_root = None

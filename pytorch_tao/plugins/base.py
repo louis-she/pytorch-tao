@@ -1,7 +1,10 @@
 import warnings
-from typing import Callable, List
+from typing import Callable, List, TYPE_CHECKING
 
 from ignite.engine import CallableEventWithFilter, Engine, EventsList
+
+if TYPE_CHECKING:
+    from pytorch_tao import Trainer
 
 
 class BasePlugin:
@@ -47,11 +50,13 @@ class BasePlugin:
     """
 
     engine: Engine
+    trainer: "Trainer"
     __skip_tao_event__: List[str] = []
 
     def __init__(self, attach_to: str = None):
         self.attach_to = attach_to
         self.engine = None
+        self.trainer = None
 
     def set_engine(self, engine: Engine):
         self.engine = engine

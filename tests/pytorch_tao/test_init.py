@@ -15,3 +15,8 @@ def test_global_attr_are_set():
     assert hasattr(tao, "log_dir")
     assert hasattr(tao, "name")
     assert hasattr(tao, "tune")
+
+
+def test_get_logger():
+    logger = tao.get_logger(__name__)
+    assert logger.name.startswith("pytorch_tao")

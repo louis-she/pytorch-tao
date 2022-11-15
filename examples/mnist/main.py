@@ -1,13 +1,14 @@
 import os
+
 import pytorch_tao as tao
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from torchvision import datasets, transforms
-from torch.utils.data import DataLoader
 
 from ignite.metrics import Accuracy
 from pytorch_tao.plugins import Metric, ProgressBar
+from torch.utils.data import DataLoader
+from torchvision import datasets, transforms
 
 
 @tao.arguments

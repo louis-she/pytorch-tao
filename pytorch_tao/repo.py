@@ -9,6 +9,7 @@ from typing import Dict, Tuple, Union
 import git
 import jinja2
 import optuna
+from filelock import FileLock
 from torch.distributed.run import run
 
 import pytorch_tao as tao
@@ -38,6 +39,7 @@ class Repo:
     def _preset(self):
         self._load_git()
         self._load_cfg()
+        self.lock = FileLock(self.tao_path / ".repo.lock")
 
     def _load_cfg(self):
         tao.load_cfg(self.cfg_path)
@@ -61,6 +63,7 @@ class Repo:
         self.git = git.Repo.init(self.path)
         self.commit_all("initial commit")
         self._load_cfg()
+        self.lock = FileLock(self.tao_path / ".repo.lock")
 
     def _create_proj_from_template(self, proj_name="mini"):
         self._create_proj_file(proj_name, ".gitignore")
@@ -122,11 +125,6 @@ class Repo:
             os.environ.update(main_process_env)
 
     def _prepare_wd(self, checkout: str = None) -> Path:
-        if self.git.is_dirty(untracked_files=True):
-            raise exceptions.DirtyRepoError(
-                "`tao run` requires the repo to be clean, "
-                "or use `tao run --dirty` to run in dirty mode"
-            )
         if checkout:
             try:
                 current_pos = self.git.active_branch.name
@@ -161,13 +159,14 @@ class Repo:
             raise ValueError("In memory study is not supported in tao")
         if not name:
             name = self._gen_name()
-        tao.study = optuna.create_study(
-            study_name=name,
-            storage=tao.cfg.study_storage,
-            load_if_exists=duplicated,
-            direction=tao.cfg.tune_direction,
-        )
-        wd = self._prepare_wd()
+        with self.lock:
+            tao.study = optuna.create_study(
+                study_name=name,
+                storage=tao.cfg.study_storage,
+                load_if_exists=duplicated,
+                direction=tao.cfg.tune_direction,
+            )
+            wd = self._prepare_wd()
         for _ in range(max_trials or int(1e9)):
             env = {
                 "TAO_COMMIT": self.git.head.ref.commit.hexsha,
@@ -180,22 +179,24 @@ class Repo:
             self._torchrun(wd, env, ("tao_tune_name", "tao_tune_duplicated"))
 
     def _gen_name(self) -> str:
-        name = datetime.now().strftime("%m-%d_%H:%M")
-        if not self.is_dirty():
-            name = f"{name}_{self.head_hexsha(short=True)}"
-        return name
+        if self.is_dirty():
+            return "dirty"
+        return "unnamed"
 
     def is_dirty(self) -> bool:
         return self.git.is_dirty()
 
     def head_hexsha(self, short=False) -> str:
-        hexsha = self.git.head.ref.commit.hexsha
+        try:
+            hexsha = self.git.head.ref.commit.hexsha
+        except TypeError:
+            hexsha = self.git.rev_parse("HEAD").hexsha
         if short:
             return hexsha[:8]
         return hexsha
 
     @core.ensure_config("run_dir")
-    def run(self, commit: str, dirty: bool, checkout: "str"):
+    def run(self, name: str, dirty: bool, checkout: "str"):
         """Start a training process.
 
         Run will call :code:`torch.distributed.run` so this func will rely on the
@@ -207,20 +208,23 @@ class Repo:
         if checkout and dirty:
             raise ArgumentError("checkout and dirty can not be used at the same time")
 
-        if commit:
-            self.git.git.add(all=True)
-            self.git.index.commit(commit)
+        if not checkout and not dirty and self.git.is_dirty(untracked_files=True):
+            raise exceptions.DirtyRepoError(
+                "`tao run` requires the repo to be clean, "
+                "or use `tao run --dirty` to run in dirty mode"
+            )
 
-        wd = self.path if dirty else self._prepare_wd(checkout)
-        env = {
-            "TAO_NAME": self._gen_name(),
-            "TAO_COMMIT": self.git.head.ref.commit.hexsha,
-            "TAO_RUN_AT": datetime.now().strftime("%m/%d/%Y, %H:%M:%S"),
-            "TAO_REPO": wd.as_posix(),
-            "PYTHONPATH": f'{wd.as_posix()}:{os.getenv("PYTHONPATH", "")}',
-            "TAO_DIRTY": "1" if self.is_dirty() else None,
-        }
-        self._torchrun(wd, env, ("tao_dirty", "tao_cmd", "tao_commit", "tao_checkout"))
+        with self.lock:
+            wd = self.path if dirty else self._prepare_wd(checkout)
+            env = {
+                "TAO_NAME": name if name else self._gen_name(),
+                "TAO_COMMIT": self.git.head.ref.commit.hexsha,
+                "TAO_RUN_AT": datetime.now().strftime("%m/%d/%Y, %H:%M:%S"),
+                "TAO_REPO": wd.as_posix(),
+                "PYTHONPATH": f'{wd.as_posix()}:{os.getenv("PYTHONPATH", "")}',
+                "TAO_DIRTY": "1" if self.is_dirty() else None,
+            }
+        self._torchrun(wd, env, ("tao_dirty", "tao_cmd", "tao_checkout"))
 
     @classmethod
     def create(cls, path: Union[Path, str], template: str = "mini") -> "Repo":

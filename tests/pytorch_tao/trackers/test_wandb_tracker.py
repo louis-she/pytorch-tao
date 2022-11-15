@@ -10,17 +10,14 @@ from pytorch_tao.trackers.wandb_tracker import WandbTracker
 
 
 def test_wandb_tracker_init(test_repo):
-    with pytest.raises(
-        exceptions.ConfigMissingError,
-        match="Config keys \\{'wandb_project'\\} must be present for calling __init__",
-    ):
-        WandbTracker("random_name")
+    with patch.object(wandb, "init") as wandb_init:
+        with pytest.raises(
+            exceptions.ConfigMissingError,
+            match="Config keys \\{'wandb_project'\\} must be present for calling __init__",
+        ):
+            WandbTracker("random_name")
 
     tao.cfg.wandb_project = "some project"
-
-    with pytest.raises(wandb.errors.UsageError, match="api_key not configured"):
-        WandbTracker("random_name")
-
     tao.cfg.wandb_api_key = "123456"
     with patch.object(wandb, "init") as wandb_init:
         WandbTracker("random_name")
