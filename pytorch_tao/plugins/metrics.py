@@ -1,5 +1,7 @@
 import logging
 
+import ignite.distributed as idist
+
 from ignite.engine import Engine, Events
 
 from ignite.metrics import Metric as IMetric
@@ -48,6 +50,7 @@ class Metric(ValPlugin):
         self._metric.attach(engine, self.name)
         super().attach(engine)
 
+    @idist.one_rank_only()
     @tao.on(Events.EPOCH_COMPLETED)
     def _track(self, engine: Engine):
         score = engine.state.metrics[self.name]

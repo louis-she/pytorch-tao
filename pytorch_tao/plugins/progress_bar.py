@@ -14,6 +14,8 @@ except ModuleNotFoundError:
     pynvml = None
 from typing import Tuple
 
+import ignite.distributed as idist
+
 from ignite.engine import Engine, Events
 from tqdm import tqdm
 
@@ -87,6 +89,7 @@ class ProgressBar(BasePlugin):
             self.hardware_record["gpu_memory"] = torch.cuda.mem_get_info()
         self.last_update_time = now
 
+    @idist.one_rank_only()
     @tao.on(Events.EPOCH_STARTED)
     def _create_tqdm(self, engine: Engine):
         tpl = "%11s   "
@@ -105,6 +108,7 @@ class ProgressBar(BasePlugin):
             bar_format="{l_bar}{bar:10}{r_bar}{bar:-10b}",
         )
 
+    @idist.one_rank_only()
     @tao.on(lambda self: Events.ITERATION_COMPLETED(every=self.interval))
     def _log(self, engine: Engine):
         self._update_hardware_usage()

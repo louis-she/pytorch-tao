@@ -1,6 +1,8 @@
 import logging
 from typing import List
 
+import ignite.distributed as idist
+
 from ignite.engine import Engine, Events
 
 import pytorch_tao as tao
@@ -46,10 +48,12 @@ class OutputRecorder(BasePlugin):
         trainer.use(OutputRecorder("loss"), at="train")
     """
 
+    @idist.one_rank_only()
     def __init__(self, *fields: List[str]):
         super().__init__()
         self.fields = fields
 
+    @idist.one_rank_only()
     @tao.on(Events.ITERATION_COMPLETED)
     def _record_fields(self, engine: Engine):
         for field in self.fields:

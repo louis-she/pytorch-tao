@@ -1,5 +1,7 @@
 from typing import Dict
 
+import ignite.distributed as idist
+
 from ignite.engine import Events
 from ignite.handlers import Checkpoint as ICheckpoint, DiskSaver
 
@@ -36,6 +38,7 @@ class Checkpoint(ValPlugin):
         trainer.use(Checkpoint("accuracy", {"model": model}))
     """
 
+    @idist.one_rank_only()
     def __init__(self, metric_name: str, objects: Dict, score_sign: int = 1, n_saved=3):
         self.metric_name = metric_name
         self.objects = objects
@@ -52,6 +55,7 @@ class Checkpoint(ValPlugin):
             n_saved=n_saved,
         )
 
+    @idist.one_rank_only()
     @tao.on(Events.EPOCH_COMPLETED)
     def _save_checkpoint(self):
         self._checkpoint(self.engine)

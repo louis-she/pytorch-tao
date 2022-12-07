@@ -7,6 +7,8 @@ from importlib import import_module
 from pathlib import Path
 from typing import Callable, Dict, List
 
+import ignite.distributed as idist
+
 import jinja2
 from optuna import load_study
 
@@ -19,8 +21,8 @@ from pytorch_tao import exceptions
 _log_format = "[%(levelname).1s %(asctime)s] %(message)s"
 
 
+@idist.one_rank_only()
 class StreamLogFormatter(logging.Formatter):
-
     grey = "\033[0;37m"
     green = "\033[0;32m"
     yellow = "\033[1;33m"
@@ -43,14 +45,19 @@ class StreamLogFormatter(logging.Formatter):
 def init_logger():
     for logger in [logging.getLogger("pytorch_tao"), logging.getLogger("py.warnings")]:
         logger.setLevel(logging.INFO)
+        one_rank_only = idist.one_rank_only()
 
         stream_handler = logging.StreamHandler(sys.stdout)
+        stream_handler.emit = one_rank_only(stream_handler.emit)
         stream_handler.setFormatter(StreamLogFormatter(fmt=_log_format))
 
         file_formatter = logging.Formatter(fmt=_log_format)
         main_file_handler = logging.FileHandler(tao.cfg.log_dir / "log.txt", mode="a")
+        main_file_handler.emit = one_rank_only(main_file_handler.emit)
         main_file_handler.setFormatter(file_formatter)
+
         run_file_handler = logging.FileHandler(tao.log_dir / "log.txt", mode="w")
+        run_file_handler.emit = one_rank_only(run_file_handler.emit)
         run_file_handler.setFormatter(file_formatter)
 
         logger.addHandler(stream_handler)
