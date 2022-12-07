@@ -17,17 +17,21 @@ from pytorch_tao.trackers.base import Tracker
 class WandbTracker(Tracker):
     """Tracker with wandb"""
 
-    @tao.ensure_config("wandb_project")
     def __init__(self, name):
         super().__init__()
         if wandb is None:
             raise ModuleNotFoundError("install wandb to use WandbTracker")
+        self.name = name
+        self.init()
+
+    @tao.ensure_config("wandb_project")
+    def init(self):
         if hasattr(tao.cfg, "wandb_api_key") and tao.cfg.wandb_api_key is not None:
             os.environ["WANDB_API_KEY"] = tao.cfg.wandb_api_key
         self.wandb = wandb.init(
             dir=tao.cfg.log_dir,
             project=tao.cfg.wandb_project,
-            name=name,
+            name=self.name,
             group=os.environ.get("TAO_TUNE"),
         )
         if tao.args:
