@@ -34,3 +34,6 @@ class Tracker(TrainPlugin):
 
     def update_meta(self, meta: dict):
         pass
+
+    def add_tabular(self, name, df):
+        pass

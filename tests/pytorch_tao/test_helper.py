@@ -32,3 +32,29 @@ def test_seedeverything_range():
     with pytest.raises(ValueError, match="seed number should be less than 10000"):
         helper.seed_everything(10000)
     helper.seed_everything(9999)
+
+
+def test_stride_event_filter():
+    func = helper.stride_event_filter()
+    for i in range(1, 10):
+        assert func(None, i)
+
+    func = helper.stride_event_filter("::")
+    for i in range(1, 10):
+        assert func(None, i)
+
+    func = helper.stride_event_filter("10:3")
+    for e in [10, 13, 16, 19, 310]:
+        assert func(None, e)
+    for e in [1, 2, 3, 4, 5, 6, 7, 8, 9, 11, 12, 14, 15, 17, 18]:
+        assert not func(None, e)
+
+    func = helper.stride_event_filter("10:3:20")
+    for e in [10, 13, 16, 19]:
+        assert func(None, e)
+
+    func = helper.stride_event_filter("4:2:8")
+    for e in [4, 6, 8]:
+        assert func(None, e)
+    for e in [1, 2, 3, 5, 7, 9]:
+        assert not func(None, e)

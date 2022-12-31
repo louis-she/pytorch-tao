@@ -49,6 +49,10 @@ class WandbTracker(Tracker):
         wandb.log({image_name: images})
 
     @idist.one_rank_only()
+    def add_histogram(self, name, data: List[float], bins=64):
+        wandb.log({name: wandb.Histogram(data, num_bins=bins)})
+
+    @idist.one_rank_only()
     def add_points(self, points: Dict):
         wandb.log(points)
 

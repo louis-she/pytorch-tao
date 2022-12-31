@@ -37,7 +37,7 @@ class Trainer:
         val_loader: Iterable = None,
         train_func: Callable = lambda e, b: None,
         val_func: Callable = lambda e, b: None,
-        val_stride: int = 1,
+        val_event: Callable = lambda e, event: True,
     ):
         if isinstance(device, str):
             device = torch.device(device)
@@ -53,7 +53,7 @@ class Trainer:
         self.train_engine = Engine(self.train_func)
         self.val_engine = Engine(self.val_func)
         self.train_engine.add_event_handler(
-            Events.EPOCH_COMPLETED(every=val_stride), self._do_eval
+            Events.EPOCH_COMPLETED(event_filter=val_event), self._do_eval
         )
 
     def to(self, device: torch.device):

@@ -41,7 +41,7 @@ setup(
     name="pytorch-tao",
     version=VERSION,
     author="Chenglu She",
-    python_requires=">3.8",
+    python_requires=">3.7",
     author_email="chenglu.she@gmail.com",
     url="https://github.com/louis-she/pytorch-tao",
     description="A toolbox for a specific Machine Learning training project",
