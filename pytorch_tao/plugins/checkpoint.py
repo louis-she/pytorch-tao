@@ -1,9 +1,10 @@
+import os
 from typing import Dict
 
 import ignite.distributed as idist
 
 from ignite.engine import Events
-from ignite.handlers import Checkpoint as ICheckpoint, DiskSaver
+from ignite.handlers import Checkpoint as ICheckpoint, DiskSaver, global_step_from_engine
 
 import pytorch_tao as tao
 from pytorch_tao.plugins.base import ValPlugin
@@ -53,6 +54,8 @@ class Checkpoint(ValPlugin):
             ),
             score_function=ICheckpoint.get_default_score_fn(metric_name, score_sign),
             n_saved=n_saved,
+            global_step_transform=global_step_from_engine(self.trainer.train_engine),
+            filename_prefix=os.environ.get("TAO_ID", None),
         )
 
     @idist.one_rank_only()
