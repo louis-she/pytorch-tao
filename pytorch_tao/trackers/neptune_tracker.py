@@ -1,3 +1,4 @@
+import tempfile
 from typing import Dict, List
 
 import ignite.distributed as idist
@@ -45,8 +46,6 @@ class NeptuneTracker(Tracker):
             name=self.name,
             api_token=tao.cfg.neptune_api_key,
         )
-        if tao.args:
-            self.update_meta(tao.args.dict())
 
     @idist.one_rank_only()
     def add_image(self, image_name: str, images: List[np.ndarray]):
@@ -77,7 +76,9 @@ class NeptuneTracker(Tracker):
 
     @idist.one_rank_only()
     def add_tabular(self, name, df):
-        self.run[f"tabular/{name}"].upload(neptune.types.File.as_html(df))
+        with tempfile.NamedTemporaryFile(suffix=".csv", mode="w") as fp:
+            df.to_csv(fp.name, index=False)
+            self.run[f"tabular/{name}"].upload(fp.name, wait=True)
 
     @idist.one_rank_only()
     @tao.on(Events.COMPLETED)

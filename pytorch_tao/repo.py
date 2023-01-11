@@ -1,5 +1,6 @@
 import os
 import shutil
+import uuid
 from argparse import ArgumentError
 from datetime import datetime
 from pathlib import Path
@@ -126,13 +127,7 @@ class Repo:
 
     def _prepare_wd(self, checkout: str = None) -> Path:
         if checkout:
-            try:
-                current_pos = self.git.active_branch.name
-            except TypeError:
-                current_pos = self.git.rev_parse("HEAD")
-            self.git.git.checkout(checkout)
-            hexsha = self.git.rev_parse("HEAD").hexsha[:8]
-            self.git.git.checkout(current_pos)
+            hexsha = self.git.rev_parse(checkout)
         else:
             hexsha = self.git.head.ref.commit.hexsha[:8]
         wd = tao.cfg.run_dir / hexsha
@@ -216,6 +211,7 @@ class Repo:
 
         with self.lock:
             wd = self.path if dirty else self._prepare_wd(checkout)
+            tao_id = uuid.uuid4().hex
             env = {
                 "TAO_NAME": name if name else self._gen_name(),
                 "TAO_COMMIT": self.git.head.ref.commit.hexsha,
@@ -223,6 +219,8 @@ class Repo:
                 "TAO_REPO": wd.as_posix(),
                 "PYTHONPATH": f'{wd.as_posix()}:{os.getenv("PYTHONPATH", "")}',
                 "TAO_DIRTY": "1" if self.is_dirty() else None,
+                "TAO_ID": tao_id[:8],
+                "TAO_ID_FULL": tao_id,
             }
         self._torchrun(wd, env, ("tao_dirty", "tao_cmd", "tao_checkout"))
 

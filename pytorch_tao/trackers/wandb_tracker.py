@@ -38,8 +38,6 @@ class WandbTracker(Tracker):
             name=self.name,
             group=os.environ.get("TAO_TUNE"),
         )
-        if tao.args:
-            self.update_meta(tao.args.dict())
 
     @idist.one_rank_only()
     def add_image(self, image_name: str, images: List[np.ndarray]):

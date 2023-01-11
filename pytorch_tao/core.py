@@ -173,6 +173,14 @@ def parse_tao_args(args: str = None):
 
     subparsers = parser.add_subparsers(dest="tao_cmd")
 
+    kaggle_parser = subparsers.add_parser(
+        "sync_kaggle", help="Sync repo code to kaggle dataset"
+    )
+
+    kaggle_parser.add_argument(
+        "path", type=str, default=".", nargs="?", help="Path of the existing project"
+    )
+
     run_parser = subparsers.add_parser(
         "run",
         help="Run a training process",
@@ -288,11 +296,16 @@ def dispatch(args: argparse.Namespace):
             args.tao_tune_name, args.tao_tune_max_trials, args.tao_tune_duplicated
         )
 
+    def _sync_kaggle():
+        repo = tao.Repo(args.path)
+        repo.sync_code_to_kaggle()
+
     _cmd = {
         "run": _run,
         "new": _new,
         "init": _init,
         "tune": _tune,
+        "sync_kaggle": _sync_kaggle,
     }
 
     _cmd[args.tao_cmd]()
