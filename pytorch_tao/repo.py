@@ -127,7 +127,7 @@ class Repo:
 
     def _prepare_wd(self, checkout: str = None) -> Path:
         if checkout:
-            hexsha = self.git.rev_parse(checkout)
+            hexsha = self.git.rev_parse(checkout).hexsha[:8]
         else:
             hexsha = self.git.head.ref.commit.hexsha[:8]
         wd = tao.cfg.run_dir / hexsha

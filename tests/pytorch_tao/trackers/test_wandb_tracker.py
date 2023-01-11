@@ -13,7 +13,7 @@ def test_wandb_tracker_init(test_repo):
     with patch.object(wandb, "init") as wandb_init:
         with pytest.raises(
             exceptions.ConfigMissingError,
-            match="Config keys \\{'wandb_project'\\} must be present for calling __init__",
+            match="Config keys \\{'wandb_project'\\} must be present for calling init",
         ):
             WandbTracker("random_name")
 

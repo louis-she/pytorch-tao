@@ -11,3 +11,4 @@ psutil~=5.9.2
 pynvml~=11.4.1
 torchvision
 wandb
+matplotlib
