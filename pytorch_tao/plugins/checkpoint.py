@@ -1,9 +1,10 @@
 from typing import Dict
+import os
 
 import ignite.distributed as idist
 
 from ignite.engine import Events
-from ignite.handlers import Checkpoint as ICheckpoint, DiskSaver
+from ignite.handlers import Checkpoint as ICheckpoint, DiskSaver, global_step_from_engine
 
 import pytorch_tao as tao
 from pytorch_tao.plugins.base import ValPlugin
@@ -42,7 +43,12 @@ class Checkpoint(ValPlugin):
     def __init__(self, metric_name: str, objects: Dict, score_sign: int = 1, n_saved=3):
         self.metric_name = metric_name
         self.objects = objects
-        self.save_path = tao.log_dir / "checkpoints"
+        self.score_sign = score_sign
+        self.n_saved = n_saved
+        self.save_path = tao.log_dir / os.environ["TAO_ID"] / "checkpoints"
+
+    @idist.one_rank_only()
+    def after_use(self):
         self._checkpoint = ICheckpoint(
             self.objects,
             DiskSaver(
@@ -51,8 +57,9 @@ class Checkpoint(ValPlugin):
                 save_on_rank=0,
                 require_empty=False,
             ),
-            score_function=ICheckpoint.get_default_score_fn(metric_name, score_sign),
-            n_saved=n_saved,
+            score_function=ICheckpoint.get_default_score_fn(self.metric_name, self.score_sign),
+            n_saved=self.n_saved,
+            global_step_transform=global_step_from_engine(self.trainer.train_engine),
         )
 
     @idist.one_rank_only()

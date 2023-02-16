@@ -56,18 +56,18 @@ class NeptuneTracker(Tracker):
         fig, axes = plt.subplots(1, len(images), figsize=(10, 10))
         for ax, image in zip(axes, images):
             ax.imshow(image)
-        self.run[f"images/{image_name}"].log(neptune.types.File.as_image(fig))
+        self.run[f"images/{image_name}"].log(neptune.types.File.as_image(fig), step=self.trainer.state.iteration)
 
     @idist.one_rank_only()
     def add_histogram(self, name, data: List[float], bins=64):
         fig, ax = plt.subplots()
         ax.hist(data, bins=bins)
-        self.run[f"histogram/{name}"].log(neptune.types.File.as_image(fig))
+        self.run[f"histogram/{name}"].log(neptune.types.File.as_image(fig), step=self.trainer.state.iteration)
 
     @idist.one_rank_only()
     def add_points(self, points: Dict):
         for key, value in points.items():
-            self.run[f"charts/{key}"].append(value)
+            self.run[f"charts/{key}"].append(value, step=self.trainer.state.iteration)
 
     @idist.one_rank_only()
     def update_meta(self, meta: dict):

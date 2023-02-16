@@ -40,7 +40,10 @@ class Scheduler(base.TrainPlugin):
 
     @tao.on(Events.ITERATION_COMPLETED)
     def _step(self):
-        with warnings.catch_warnings(record=True):
-            # ommit the annoying step order warning...
-            self._scheduler.step()
+        try:
+            with warnings.catch_warnings(record=True):
+                # ommit the annoying step order warning...
+                self._scheduler.step()
+        except ValueError:
+            pass
         tao.tracker.add_points({"lr": self._scheduler.get_last_lr()[0]})

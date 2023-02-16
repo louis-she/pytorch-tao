@@ -171,6 +171,7 @@ class Trainer:
                     loss = results[0]
                 elif isinstance(results, dict):
                     loss = results["loss"]
+                loss /= accumulate
                 if scaler is not None:
                     scaler.scale(loss).backward()
                     if engine.state.iteration % accumulate == 0:
@@ -294,6 +295,7 @@ class Trainer:
         else:
             raise ValueError("base plugin should maunally attach to engine")
         plugin.trainer = self
+        plugin.after_use()
 
     def fit(self, *, max_epochs: int):
         """Start the training and evaluation loop process.

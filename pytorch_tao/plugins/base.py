@@ -88,6 +88,9 @@ class BasePlugin:
             event_handler, CallableEventWithFilter
         )
 
+    def after_use(self):
+        pass
+
 
 class TrainPlugin(BasePlugin):
     """Plugin for training phase. For more detail see :class:`BasePlugin`"""
