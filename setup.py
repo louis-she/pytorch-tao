@@ -29,12 +29,13 @@ readme = read("readme.md").replace(
 VERSION = find_version("pytorch_tao", "__init__.py")
 
 requirements = [
-    "torch~=1.10",
+    "torch",
     "GitPython~=3.1.27",
     "Jinja2~=3.1.2",
     "kaggle~=1.5.12",
     "optuna~=3.0.2",
     "pytorch-ignite~=0.4.10",
+    "filelock~=3.8.0"
 ]
 
 setup(

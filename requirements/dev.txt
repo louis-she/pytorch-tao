@@ -12,3 +12,4 @@ pynvml~=11.4.1
 torchvision
 wandb
 matplotlib
+aim

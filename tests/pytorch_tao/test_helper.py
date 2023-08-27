@@ -58,3 +58,19 @@ def test_stride_event_filter():
         assert func(None, e)
     for e in [1, 2, 3, 5, 7, 9]:
         assert not func(None, e)
+
+
+def test_parse_args():
+    mock_args = "tf_efficientnet_v2s@num_classes=1&dropout=0.3"
+    model_name, args = helper.parse_arg(mock_args)
+    assert model_name == "tf_efficientnet_v2s"
+    assert args["num_classes"] == 1
+    assert args["dropout"] == 0.3
+
+    mock_args = "Model@arch='transformer'&num_layers=6&num_heads=8"
+    model_name, args = helper.parse_arg(mock_args, default_args={"dropout": 0.3, "num_heads": 4})
+    assert model_name == "Model"
+    assert args["arch"] == "transformer"
+    assert args["dropout"] == 0.3
+    assert args["num_heads"] == 8
+    assert args["num_layers"] == 6

@@ -62,3 +62,50 @@ def stride_event_filter(event: str = None):
         return (e >= start) and (e <= end) and ((e - start) % stride == 0)
 
     return _event_filter
+
+
+def sync_masters(var):
+    """Sync random variable with master
+
+    Args:
+        var: the random variable to sync
+    
+    .. code-block:: python
+
+        var = random.random()
+        var = sync_masters(var)
+    """
+    objects = [var]
+    torch.distributed.broadcast_object_list(objects, src=0)
+    return objects[0]
+
+
+def dist_cat(data):
+    """Concat the list from different nodes to one list"""
+    world_size = torch.distributed.get_world_size()
+    if world_size == 1:
+        return data
+    data_list = [None for _ in range(world_size)]
+    torch.distributed.all_gather_object(data_list, data)
+    return [x for xs in data_list for x in xs]
+
+
+def parse_arg(s: str, default_args=None):
+    """parse argument string
+
+    Args:
+        s: the string to parse
+        default_args: the default arguments
+    """
+    results = s.split("@")
+    if len(results) == 1:
+        main = results[0]
+        args = {}
+    else:
+        main = results[0]
+        args = [x.split("=") for x in results[1].split("&")]
+    args = {key: eval(value) for key, value in args}
+    if default_args is None:
+        default_args = {}
+    default_args.update(args)
+    return main, default_args

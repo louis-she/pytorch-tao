@@ -38,21 +38,22 @@ class WandbTracker(Tracker):
             name=self.name,
             group=os.environ.get("TAO_TUNE"),
         )
+        self.wandb.log_code(root=tao.repo.path)
 
     @idist.one_rank_only()
     def add_image(self, image_name: str, images: List[np.ndarray]):
         if not isinstance(images, list):
             images = [images]
         images = [wandb.Image(image) for image in images]
-        wandb.log({image_name: images})
+        wandb.log({image_name: images}, step=self.trainer.state.iteration)
 
     @idist.one_rank_only()
     def add_histogram(self, name, data: List[float], bins=64):
-        wandb.log({name: wandb.Histogram(data, num_bins=bins)})
+        wandb.log({name: wandb.Histogram(data, num_bins=bins)}, step=self.trainer.state.iteration)
 
     @idist.one_rank_only()
     def add_points(self, points: Dict):
-        wandb.log(points)
+        wandb.log(points, step=self.trainer.state.iteration)
 
     @idist.one_rank_only()
     def update_meta(self, meta: dict):
