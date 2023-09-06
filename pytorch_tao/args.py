@@ -66,6 +66,8 @@ class _ArgSet:
     def dict(self):
         return {k: v.get() for k, v in self._args.items()}
 
+    state_dict = dict
+
     def get_distribution(self):
         return {
             k: v.distribution

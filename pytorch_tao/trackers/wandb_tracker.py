@@ -37,6 +37,7 @@ class WandbTracker(Tracker):
             project=tao.cfg.wandb_project,
             name=self.name,
             group=os.environ.get("TAO_TUNE"),
+            notes=getattr(tao.cfg, "wandb_notes", ""),
         )
         self.wandb.log_code(root=tao.repo.path)
 
@@ -49,7 +50,10 @@ class WandbTracker(Tracker):
 
     @idist.one_rank_only()
     def add_histogram(self, name, data: List[float], bins=64):
-        wandb.log({name: wandb.Histogram(data, num_bins=bins)}, step=self.trainer.state.iteration)
+        wandb.log(
+            {name: wandb.Histogram(data, num_bins=bins)},
+            step=self.trainer.state.iteration,
+        )
 
     @idist.one_rank_only()
     def add_points(self, points: Dict):

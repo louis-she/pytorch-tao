@@ -7,6 +7,7 @@ from ignite.engine import Engine, Events
 from ignite.engine.events import State
 
 from pytorch_tao import helper
+from pytorch_tao.adversarial import Adversarial
 
 from pytorch_tao.plugins.base import BasePlugin, TrainPlugin, ValPlugin
 
@@ -83,6 +84,8 @@ class Trainer:
         grad: bool = True,
         accumulate: int = 1,
         scaler: torch.cuda.amp.GradScaler = None,
+        adversarial: Adversarial = None,
+        adversarial_enabled: Callable[[Engine], bool] = lambda _: False,
     ):
         """Decorator that define the training process.
 
@@ -160,25 +163,35 @@ class Trainer:
             @torch.set_grad_enabled(grad)
             @wraps(func)
             def _func(engine: Engine, batch):
+                def _do_adversarial():
+                    if not adversarial_enabled(engine):
+                        return
+                    adversarial.save()
+                    adversarial.attack_step()
+                    adv_loss = self._get_loss(self._process_func(fields, batch, func))
+                    optimizer.zero_grad()
+                    if scaler is not None:
+                        scaler.scale(adv_loss).backward()
+                    else:
+                        adv_loss.backward()
+                    adversarial.restore()
+
                 if self.model is not None:
                     self.model.train()
                 if (engine.state.iteration - 1) % accumulate == 0:
                     optimizer.zero_grad()
                 results = self._process_func(fields, batch, func)
-                if helper.is_scalar(results):
-                    loss = results
-                elif isinstance(results, (list, tuple)):
-                    loss = results[0]
-                elif isinstance(results, dict):
-                    loss = results["loss"]
+                loss = self._get_loss(results)
                 loss /= accumulate
                 if scaler is not None:
                     scaler.scale(loss).backward()
+                    _do_adversarial()
                     if engine.state.iteration % accumulate == 0:
                         scaler.step(optimizer)
                         scaler.update()
                 else:
                     loss.backward()
+                    _do_adversarial()
                     if engine.state.iteration % accumulate == 0:
                         optimizer.step()
                 return results
@@ -248,6 +261,18 @@ class Trainer:
 
         return decorator
 
+    def _get_loss(self, results):
+        if helper.is_scalar(results):
+            return results
+        elif isinstance(results, (list, tuple)):
+            return results[0]
+        elif isinstance(results, dict):
+            return results["loss"]
+        else:
+            raise ValueError(
+                f"the type of return value is not supported {type(results)}"
+            )
+
     def _process_func(self, fields: List[str], batch: Any, func: Callable):
         if isinstance(batch, (tuple, list)):
             batch = tuple(
@@ -281,6 +306,7 @@ class Trainer:
             plugin: the plugin to use.
             at: which engine to attach.
         """
+        plugin.trainer = self
         if at is not None:
             if at not in ["train", "val"]:
                 raise ValueError("at must be train or val")
@@ -294,7 +320,6 @@ class Trainer:
             plugin.attach(self.val_engine)
         else:
             raise ValueError("base plugin should maunally attach to engine")
-        plugin.trainer = self
         plugin.after_use()
 
     def fit(self, *, max_epochs: int):

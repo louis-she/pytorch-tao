@@ -241,7 +241,6 @@ def test_repo_for_tune(render_tpl):
 
 @pytest.fixture(scope="function")
 def tracker():
-
     _previous_tracker = tao.tracker
 
     class _Tracker(tao.Tracker):

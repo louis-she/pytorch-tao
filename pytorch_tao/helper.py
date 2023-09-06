@@ -69,7 +69,7 @@ def sync_masters(var):
 
     Args:
         var: the random variable to sync
-    
+
     .. code-block:: python
 
         var = random.random()

@@ -5,7 +5,6 @@ import pytorch_tao as tao
 
 
 def test_log_reproduce_command(trainer: tao.Trainer, test_repo: tao.Repo):
-
     sys.argv = ["main.py", "--batch_size", "10", "--enable_swa"]
 
     @tao.arguments

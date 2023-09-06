@@ -35,7 +35,7 @@ requirements = [
     "kaggle~=1.5.12",
     "optuna~=3.0.2",
     "pytorch-ignite~=0.4.10",
-    "filelock~=3.8.0"
+    "filelock~=3.8.0",
 ]
 
 setup(

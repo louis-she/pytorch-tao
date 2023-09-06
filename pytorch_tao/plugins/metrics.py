@@ -65,3 +65,5 @@ class Metric(ValPlugin):
         )
         if self.tune and tao.trial is not None:
             tao.trial.report(engine.state.metrics[self.name], self.trainer.state.epoch)
+        # update trainer metrics
+        self.trainer.state.metrics = engine.state.metrics

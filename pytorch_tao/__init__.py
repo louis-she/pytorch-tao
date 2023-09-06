@@ -11,8 +11,9 @@ from typing import Any
 
 from optuna import Study, Trial
 
-from pytorch_tao.args import _ArgSet, arg, arguments
 from pytorch_tao import helper
+
+from pytorch_tao.args import _ArgSet, arg, arguments
 
 from pytorch_tao.core import (
     ArgMissingError,

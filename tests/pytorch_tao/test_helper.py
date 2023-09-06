@@ -68,7 +68,9 @@ def test_parse_args():
     assert args["dropout"] == 0.3
 
     mock_args = "Model@arch='transformer'&num_layers=6&num_heads=8"
-    model_name, args = helper.parse_arg(mock_args, default_args={"dropout": 0.3, "num_heads": 4})
+    model_name, args = helper.parse_arg(
+        mock_args, default_args={"dropout": 0.3, "num_heads": 4}
+    )
     assert model_name == "Model"
     assert args["arch"] == "transformer"
     assert args["dropout"] == 0.3

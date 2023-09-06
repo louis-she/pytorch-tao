@@ -44,7 +44,6 @@ def empty_argv():
 
 
 def test_arguments_default(empty_argv):
-
     tao.arguments(_Argument)
 
     assert tao.args.a is None

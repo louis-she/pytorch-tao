@@ -54,7 +54,6 @@ def test_trainer_train_decorator(fake_mnist_trainer: tao.Trainer):
 
 @pytest.mark.skipif(not torch.cuda.is_available(), reason="cuda only")
 def test_trainer_train_decorator_cuda_device(fake_mnist_trainer: tao.Trainer):
-
     fake_mnist_trainer.to("cuda")
 
     @fake_mnist_trainer.train()
